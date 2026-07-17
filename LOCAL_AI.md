@@ -19,6 +19,14 @@ REEBOT LAB usa **Ollama** como motor local y `qwen3.5:9b` como modelo recomendad
 
 4. Abre `START_REEBOT_AGENT.cmd`.
 
+## Acceso directo al modelo
+
+Ejecuta `OPEN_REEBOT_AI.cmd` o selecciona **CONSOLA IA** desde `REEBOT LAB.exe`. Esto abre una terminal conectada directamente a `qwen3.5:9b`; escribe `/bye` para salir.
+
+La API de Ollama permanece disponible en `http://127.0.0.1:11434`. No se publica en la red local ni en internet.
+
+Si el servidor está apagado, `OPEN_REEBOT_AI.cmd` intenta iniciarlo automáticamente. Si Ollama no puede arrancar, REEBOT LAB conserva la telemetría y responde con su motor básico integrado; no bloquea la interfaz.
+
 El agente detecta Ollama en `http://127.0.0.1:11434`, muestra un código temporal de seis dígitos y escucha únicamente en el loopback local `127.0.0.1:47831`.
 
 ## Vinculación con la página publicada

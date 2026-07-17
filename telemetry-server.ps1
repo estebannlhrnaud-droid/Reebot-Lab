@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'SilentlyContinue'
 
-$bridgeVersion = '0.2.1'
+$bridgeVersion = '0.3.0'
 $bridgeStatePath = Join-Path $PSScriptRoot '.reebot-bridge.json'
 $preferredModel = if ($env:REEBOT_AI_MODEL) { $env:REEBOT_AI_MODEL } else { 'qwen3.5:9b' }
 $allowedHostedOrigins = @(

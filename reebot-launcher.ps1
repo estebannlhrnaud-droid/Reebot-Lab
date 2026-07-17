@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
-$launcherVersion = '0.2.1'
+$launcherVersion = '0.3.0'
 $projectRoot = $PSScriptRoot
 $publishedUrl = 'https://reebot-lab-preview.estebannlhrnaud.chatgpt.site'
 $localUrl = 'http://localhost:3000'
@@ -37,6 +37,11 @@ function Refresh-ExecutablePaths {
     $script:npmPath = Join-Path (Split-Path -Parent $script:nodePath) 'npm.cmd'
     if (-not (Test-Path -LiteralPath $script:npmPath)) {
       $script:npmPath = Find-Executable 'npm.cmd' @()
+    }
+    $nodeDirectory = Split-Path -Parent $script:nodePath
+    $pathEntries = @($env:Path -split ';')
+    if ($pathEntries -notcontains $nodeDirectory) {
+      $env:Path = "$nodeDirectory;$env:Path"
     }
   }
   $script:ollamaPath = Find-Executable 'ollama.exe' @(
@@ -192,9 +197,16 @@ function Start-BridgeIfNeeded {
 }
 
 function Confirm-Dependencies {
-  if (Test-Path -LiteralPath (Join-Path $projectRoot 'node_modules')) { return $true }
+  $vinextCommand = Join-Path $projectRoot 'node_modules\.bin\vinext.cmd'
+  if (Test-Path -LiteralPath $vinextCommand) { return $true }
+  $partialInstall = Test-Path -LiteralPath (Join-Path $projectRoot 'node_modules')
+  $prompt = if ($partialInstall) {
+    "La preparacion anterior quedo incompleta. REEBOT necesita repararla con npm ci y puede tardar varios minutos.`r`n`r`nContinuar?"
+  } else {
+    "REEBOT LAB necesita preparar sus dependencias la primera vez. Se ejecutara npm ci y puede tardar varios minutos.`r`n`r`nContinuar?"
+  }
   $choice = [System.Windows.Forms.MessageBox]::Show(
-    "REEBOT LAB necesita preparar sus dependencias la primera vez. Se ejecutara npm install y puede tardar varios minutos.`r`n`r`nContinuar?",
+    $prompt,
     'Preparar REEBOT LAB',
     [System.Windows.Forms.MessageBoxButtons]::YesNo,
     [System.Windows.Forms.MessageBoxIcon]::Question
@@ -203,15 +215,19 @@ function Confirm-Dependencies {
   $script:activityLabel.Text = 'PREPARANDO COMPONENTES...'
   $script:activityLabel.ForeColor = [Drawing.Color]::FromArgb(118, 72, 255)
   $script:form.Refresh()
-  $arguments = '/d /s /c ""{0}" install"' -f $script:npmPath
+  $arguments = '/d /s /c ""{0}" ci --include=dev --no-audit --no-fund"' -f $script:npmPath
   $install = Start-Process -FilePath $env:ComSpec -ArgumentList $arguments -WorkingDirectory $projectRoot -Wait -PassThru
   if ($install.ExitCode -ne 0) {
     [System.Windows.Forms.MessageBox]::Show(
-      'No se pudieron instalar las dependencias. Revisa tu conexion y ejecuta npm install desde esta carpeta.',
+      'No se pudieron preparar las dependencias. Revisa tu conexion y ejecuta npm ci desde esta carpeta.',
       'REEBOT LAB',
       [System.Windows.Forms.MessageBoxButtons]::OK,
       [System.Windows.Forms.MessageBoxIcon]::Error
     ) | Out-Null
+    return $false
+  }
+  if (-not (Test-Path -LiteralPath $vinextCommand)) {
+    [System.Windows.Forms.MessageBox]::Show('La instalacion termino, pero vinext.cmd no fue creado.', 'REEBOT LAB', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     return $false
   }
   return $true

@@ -468,7 +468,7 @@ export default function Home() {
           <span className="brand-lab">LAB</span>
           <span className="brand-star" aria-hidden="true"><i />✦<i /></span>
         </div>
-        <div className="brand-meta"><span>PERSONAL COMPUTER COMPANION</span><b>EARLY ACCESS / 00.1</b></div>
+        <div className="brand-meta"><span>PERSONAL COMPUTER COMPANION</span><b>EARLY ACCESS / 0.3.0</b></div>
       </header>
 
       <div className="workspace">

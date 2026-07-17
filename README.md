@@ -15,6 +15,7 @@ El proyecto está en **Early Access**. La interfaz, la telemetría local, el age
 - Mascota interactiva conectada al estado del equipo.
 - Perfiles Gaming, Studio, Chill y Movie con acentos visuales propios.
 - Chat local con Ollama, historial breve y contexto de métricas.
+- Consola directa para conversar con `qwen3.5:9b` sin pasar por la interfaz web.
 - Agente local con código de vinculación para conectar la versión publicada.
 - Modo básico de respaldo cuando el modelo no está activo.
 - Vistas de procesos, laboratorio y personalización.
@@ -36,10 +37,10 @@ El proyecto está en **Early Access**. La interfaz, la telemetría local, el age
 
 ## Inicio rápido local
 
-La forma recomendada es abrir `REEBOT_LAB_LAUNCHER.cmd`. El launcher comprueba Node.js, el agente local y Ollama; muestra el código de vinculación y permite abrir la interfaz local o la versión web. Si falta Node.js, ofrece instalarlo con `winget`; la primera instalación de dependencias siempre pide confirmación.
+La forma recomendada en Windows es abrir `REEBOT LAB.exe`. El launcher ejecutable comprueba Node.js, el agente local y Ollama; muestra el código de vinculación y permite abrir la interfaz local, la versión web o la consola directa de IA. Si falta Node.js, ofrece instalarlo con `winget`; la primera instalación de dependencias siempre pide confirmación. `REEBOT_LAB_LAUNCHER.cmd` permanece como alternativa técnica.
 
 ```powershell
-npm install
+npm ci
 .\start-reebot-lab.cmd
 ```
 
@@ -71,6 +72,8 @@ npm run build
 ## IA local
 
 Consulta [LOCAL_AI.md](./LOCAL_AI.md) para instalar Ollama, descargar el modelo y entender los límites actuales.
+
+REEBOT cambia automáticamente a **ANÁLISIS BÁSICO LOCAL** si Ollama está apagado. La interfaz, la telemetría, los perfiles y los diagnósticos por reglas continúan funcionando; al volver a iniciar Ollama, la app recupera `qwen3.5:9b` sin reconfiguración.
 
 ## Participar
 
