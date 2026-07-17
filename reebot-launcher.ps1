@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
-$launcherVersion = '0.2.0'
+$launcherVersion = '0.2.1'
 $projectRoot = $PSScriptRoot
 $publishedUrl = 'https://reebot-lab-preview.estebannlhrnaud.chatgpt.site'
 $localUrl = 'http://localhost:3000'
@@ -101,7 +101,78 @@ function Get-PairCode {
 }
 
 function Open-Url([string]$url) {
-  Start-Process $url | Out-Null
+  try {
+    $explorer = Join-Path $env:WINDIR 'explorer.exe'
+    Start-Process -FilePath $explorer -ArgumentList ('"{0}"' -f $url) -ErrorAction Stop | Out-Null
+    return $true
+  } catch {
+    try {
+      $info = New-Object System.Diagnostics.ProcessStartInfo
+      $info.FileName = $url
+      $info.UseShellExecute = $true
+      [System.Diagnostics.Process]::Start($info) | Out-Null
+      return $true
+    } catch {
+      [System.Windows.Forms.Clipboard]::SetText($url)
+      [System.Windows.Forms.MessageBox]::Show(
+        "Windows no pudo abrir el navegador. La direccion se copio al portapapeles:`r`n`r`n$url",
+        'REEBOT LAB',
+        [System.Windows.Forms.MessageBoxButtons]::OK,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+      ) | Out-Null
+      return $false
+    }
+  }
+}
+
+function Install-NodeJs {
+  $winget = Find-Executable 'winget.exe' @(
+    (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\winget.exe')
+  )
+  if (-not $winget) {
+    [void](Open-Url 'https://nodejs.org/en/download')
+    [System.Windows.Forms.MessageBox]::Show(
+      'No encontre winget en esta PC. Abri la pagina oficial de Node.js; instala la version LTS y vuelve a abrir el launcher.',
+      'Instalacion manual',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Information
+    ) | Out-Null
+    return $false
+  }
+
+  $script:activityLabel.Text = 'INSTALANDO NODE.JS...'
+  $script:activityLabel.ForeColor = [Drawing.Color]::FromArgb(118, 72, 255)
+  $script:form.Refresh()
+  try {
+    $arguments = @(
+      'install',
+      '--id', 'OpenJS.NodeJS.LTS',
+      '--exact',
+      '--source', 'winget',
+      '--accept-package-agreements',
+      '--accept-source-agreements'
+    )
+    $install = Start-Process -FilePath $winget -ArgumentList $arguments -Verb RunAs -Wait -PassThru -ErrorAction Stop
+    if (-not $install -or $install.ExitCode -ne 0) { throw "winget termino con codigo $($install.ExitCode)" }
+    Refresh-ExecutablePaths
+    $nodeVersion = Get-NodeVersion
+    if (-not $nodeVersion -or $nodeVersion -lt [version]'22.13.0') { throw 'Node.js no aparecio despues de la instalacion.' }
+    [System.Windows.Forms.MessageBox]::Show(
+      "Node.js $nodeVersion quedo instalado. REEBOT continuara con la preparacion local.",
+      'Node.js listo',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Information
+    ) | Out-Null
+    return $true
+  } catch {
+    [System.Windows.Forms.MessageBox]::Show(
+      "No pude completar la instalacion automatica de Node.js.`r`n`r`n$($_.Exception.Message)",
+      'REEBOT LAB',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Error
+    ) | Out-Null
+    return $false
+  }
 }
 
 function Start-OllamaIfAvailable {
@@ -151,13 +222,13 @@ function Start-LocalUi {
   $nodeVersion = Get-NodeVersion
   if (-not $nodeVersion -or $nodeVersion -lt [version]'22.13.0' -or -not $script:npmPath) {
     $choice = [System.Windows.Forms.MessageBox]::Show(
-      'El modo local necesita Node.js 22.13 o superior. Quieres abrir la pagina oficial de descarga?',
+      'El modo local necesita Node.js 22.13 o superior. Quieres que REEBOT lo instale automaticamente con winget?',
       'Falta Node.js',
       [System.Windows.Forms.MessageBoxButtons]::YesNo,
       [System.Windows.Forms.MessageBoxIcon]::Information
     )
-    if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) { Open-Url 'https://nodejs.org/en/download' }
-    return
+    if ($choice -ne [System.Windows.Forms.DialogResult]::Yes -or -not (Install-NodeJs)) { return }
+    Refresh-ExecutablePaths
   }
   if (-not (Confirm-Dependencies)) { return }
   Start-OllamaIfAvailable

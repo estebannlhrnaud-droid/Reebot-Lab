@@ -75,6 +75,9 @@ test("Windows launcher checks prerequisites and starts each local service", asyn
   assert.match(launcher, /Confirm-Dependencies/);
   assert.match(launcher, /Start-BridgeIfNeeded/);
   assert.match(launcher, /Start-OllamaIfAvailable/);
+  assert.match(launcher, /Install-NodeJs/);
+  assert.match(launcher, /OpenJS\.NodeJS\.LTS/);
+  assert.match(launcher, /explorer\.exe/);
   assert.match(launcher, /CODIGO PARA VINCULAR/);
   assert.match(launcher, /ABRIR VERSION WEB/);
 });
