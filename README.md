@@ -6,25 +6,25 @@ REEBOT LAB es un compañero inteligente y open source para Windows que permite c
 
 ## Estado
 
-El proyecto está en **Early Access**. La interfaz y la telemetría local ya funcionan como prototipo; el chat inteligente, los permisos avanzados y los experimentos reales continúan en desarrollo.
+El proyecto está en **Early Access**. La interfaz, la telemetría local, el agente de vinculación y el chat con Ollama ya funcionan como prototipo. Los permisos avanzados y los experimentos que ejecutan acciones reales continúan en desarrollo.
 
 ## Funciones actuales
 
-- Monitor local de CPU, RAM, discos y procesos.
-- Interfaz oficial responsive de REEBOT LAB.
-- Mascota con estados de ánimo.
-- Perfiles Gaming, Estudio, Chill y Movie.
+- Monitor local de CPU, GPU, temperatura, VRAM, RAM, discos y procesos.
+- Interfaz responsive con estados semánticos y avisos automáticos.
+- Mascota interactiva conectada al estado del equipo.
+- Perfiles Gaming, Studio, Chill y Movie con acentos visuales propios.
 - Chat local con Ollama, historial breve y contexto de métricas.
+- Agente local con código de vinculación para conectar la versión publicada.
 - Modo básico de respaldo cuando el modelo no está activo.
-- Propuesta de experimentos guiados.
 - Vistas de procesos, laboratorio y personalización.
 
 ## Arquitectura
 
-- **UI:** React 19, TypeScript, Tailwind CSS y vinext/Vite.
-- **Telemetría:** PowerShell y CIM/WMI de Windows.
+- **UI:** React 19, TypeScript y vinext/Vite.
+- **Agente local:** PowerShell, HTTP en `127.0.0.1:47831` y vinculación mediante token.
+- **Telemetría:** CIM/WMI de Windows y `nvidia-smi`.
 - **IA local:** Ollama con `qwen3.5:9b` como modelo recomendado.
-- **Comunicación local:** HTTP en `127.0.0.1:47831`.
 - **Plataforma inicial:** Windows.
 
 ## Requisitos de desarrollo
@@ -32,21 +32,25 @@ El proyecto está en **Early Access**. La interfaz y la telemetría local ya fun
 - Windows 10 u 11.
 - Node.js 22.13 o superior.
 - PowerShell 5.1 o superior.
+- Ollama para usar el chat inteligente local.
 
-## Inicio rápido
+## Inicio rápido local
 
 ```powershell
 npm install
-npm run dev
-```
-
-Para iniciar también la telemetría local, ejecuta:
-
-```powershell
 .\start-reebot-lab.cmd
 ```
 
-La interfaz estará disponible en `http://localhost:3000`.
+La interfaz local estará disponible en `http://localhost:3000`.
+
+## Conectar la versión publicada
+
+1. Abre `START_REEBOT_AGENT.cmd` y mantén la ventana abierta.
+2. Copia el código de seis dígitos que muestra el agente.
+3. En la página publicada entra a **Ajustes**.
+4. Escribe el código y selecciona **Vincular**.
+
+El token queda guardado únicamente en ese navegador. El agente acepta solicitudes sólo desde la interfaz local y el dominio publicado de REEBOT LAB. Puedes revocar la vinculación desde Ajustes.
 
 ## Compilación
 
@@ -57,14 +61,14 @@ npm run build
 ## Principios del producto
 
 - La configuración pertenece al usuario.
-- Reebot pide permiso antes de acceder o cambiar algo.
-- Los experimentos restauran el estado anterior al terminar.
-- Los datos permanecen localmente salvo autorización explícita.
+- REEBOT pide permiso antes de acceder o cambiar algo.
+- Los experimentos deben restaurar el estado anterior al terminar.
+- Las métricas y conversaciones con Ollama permanecen en la PC.
 - La aplicación explica antes de recomendar.
 
 ## IA local
 
-El chat puede conectarse a Ollama y usar `qwen3.5:9b` sin suscripciones ni envío de conversaciones a la nube. Si el motor no está activo, REEBOT mantiene un modo básico basado en reglas y métricas. Consulta [LOCAL_AI.md](./LOCAL_AI.md) para activarlo en Windows.
+Consulta [LOCAL_AI.md](./LOCAL_AI.md) para instalar Ollama, descargar el modelo y entender los límites actuales.
 
 ## Participar
 

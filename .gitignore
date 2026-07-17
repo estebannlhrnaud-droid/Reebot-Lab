@@ -29,6 +29,7 @@ yarn-error.log*
 .pnpm-debug.log*
 /.codex-dev.*.log
 /.telemetry.*.log
+/.reebot-bridge.json
 
 # env files (can opt-in for committing if needed)
 .env*

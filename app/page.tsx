@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 type Process = { name: string; pid: number; cpu: number; ram: number };
@@ -32,6 +32,18 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 type AiState = { engine: "checking" | "ollama" | "basic"; model: string | null; reason: string };
 type AiReply = { reply?: string; engine?: "ollama" | "basic"; model?: string | null; reason?: string; error?: string };
 type Notice = { status: Status; symbol: string; title: string; copy: string; action?: { label: string; view: View } };
+type BridgePhase = "checking" | "offline" | "pairing" | "connected";
+type BridgeState = { phase: BridgePhase; available: boolean; model: string | null; reason: string; version: string | null };
+type BridgeStatusPayload = { available?: boolean; paired?: boolean; version?: string; engine?: "ollama" | "basic"; model?: string | null; reason?: string; error?: string };
+
+const BRIDGE_URL = "http://127.0.0.1:47831";
+
+function bridgeHeaders(token: string, includeJson = false) {
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (includeJson) headers["Content-Type"] = "application/json";
+  return headers;
+}
 
 const fallback: Metrics = {
   cpu: 18,
@@ -58,10 +70,10 @@ const fallback: Metrics = {
 };
 
 const profiles = {
-  Gaming: { copy: "Priorizo una sesión fluida y vigilo memoria, temperatura y carga.", mood: "focused" as MascotMood },
-  Estudio: { copy: "Mantengo tus herramientas disponibles sin gastar recursos de más.", mood: "calm" as MascotMood },
-  Chill: { copy: "Bajo el ritmo, reduzco el ruido y observo sólo lo importante.", mood: "calm" as MascotMood },
-  Movie: { copy: "Cuido una reproducción estable y sin interrupciones.", mood: "focused" as MascotMood },
+  Gaming: { copy: "Priorizo FPS estables y vigilo memoria de video, temperatura y carga.", mood: "focused" as MascotMood, theme: "gaming" },
+  Studio: { copy: "Cuido la fluidez al editar video, imagen y audio, sin perder trabajo en segundo plano.", mood: "focused" as MascotMood, theme: "studio" },
+  Chill: { copy: "Bajo el ritmo, reduzco el ruido y observo sólo lo importante.", mood: "calm" as MascotMood, theme: "chill" },
+  Movie: { copy: "Cuido una reproducción estable, silenciosa y sin interrupciones.", mood: "calm" as MascotMood, theme: "movie" },
 };
 
 const views: { id: View; label: string }[] = [
@@ -136,7 +148,7 @@ function metricDescription(kind: "cpu" | "gpu" | "memory" | "disk", status: Stat
 
 export default function Home() {
   const [view, setView] = useState<View>("inicio");
-  const [mode, setMode] = useState<keyof typeof profiles>("Estudio");
+  const [mode, setMode] = useState<keyof typeof profiles>("Studio");
   const [experience, setExperience] = useState<Experience>("intermedio");
   const [mascotMood, setMascotMood] = useState<MascotMood>("calm");
   const [mascotTouched, setMascotTouched] = useState(false);
@@ -149,13 +161,57 @@ export default function Home() {
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [thinking, setThinking] = useState(false);
   const [aiState, setAiState] = useState<AiState>({ engine: "checking", model: null, reason: "Buscando un motor de IA local." });
+  const [bridgeToken, setBridgeToken] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("reebot_bridge_token") || "");
+  const [pairCode, setPairCode] = useState("");
+  const [localPairCode, setLocalPairCode] = useState<string | null>(null);
+  const [pairError, setPairError] = useState("");
+  const [bridge, setBridge] = useState<BridgeState>({ phase: "checking", available: false, model: null, reason: "Buscando el agente local de REEBOT.", version: null });
+
+  const refreshBridge = useCallback(async (tokenOverride?: string) => {
+    const token = tokenOverride ?? bridgeToken;
+    try {
+      const response = await fetch(`${BRIDGE_URL}/bridge/status`, { cache: "no-store", mode: "cors", headers: bridgeHeaders(token) });
+      const payload = (await response.json()) as BridgeStatusPayload;
+      if (response.ok && payload.paired) {
+        setBridge({ phase: "connected", available: true, model: payload.model || null, reason: payload.reason || "Tu PC está vinculada.", version: payload.version || null });
+        setPairError("");
+      } else if (response.status === 401 && payload.available) {
+        setBridge({ phase: "pairing", available: true, model: null, reason: payload.reason || "Ingresa el código mostrado por el agente local.", version: payload.version || null });
+      } else {
+        throw new Error(payload.error || "El agente local no respondió.");
+      }
+
+      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        const codeResponse = await fetch(`${BRIDGE_URL}/pair-code`, { cache: "no-store", mode: "cors" });
+        if (codeResponse.ok) {
+          const codePayload = (await codeResponse.json()) as { code?: string };
+          setLocalPairCode(codePayload.code || null);
+        }
+      }
+    } catch {
+      setBridge({ phase: "offline", available: false, model: null, reason: "Abre el agente local para conectar esta página con tu PC.", version: null });
+      setLocalPairCode(null);
+    }
+  }, [bridgeToken]);
 
   useEffect(() => {
-    if (paused) return;
+    const initialTimer = window.setTimeout(() => void refreshBridge(bridgeToken), 0);
+    const timer = window.setInterval(() => void refreshBridge(), 15000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+    };
+  }, [bridgeToken, refreshBridge]);
+
+  useEffect(() => {
+    if (paused || bridge.phase !== "connected") {
+      return;
+    }
     let active = true;
     const poll = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:47831/metrics", { cache: "no-store" });
+        const response = await fetch(`${BRIDGE_URL}/metrics`, { cache: "no-store", mode: "cors", headers: bridgeHeaders(bridgeToken) });
+        if (!response.ok) throw new Error("Telemetría no autorizada.");
         const payload = (await response.json()) as Metrics;
         if (active) {
           setMetrics(payload);
@@ -171,43 +227,57 @@ export default function Home() {
       active = false;
       window.clearInterval(timer);
     };
-  }, [paused]);
+  }, [bridge.phase, bridgeToken, paused]);
 
   useEffect(() => {
     let active = true;
     const detectAi = async () => {
       try {
-        const response = await fetch("/api/ai/status", { cache: "no-store" });
+        const localReady = bridge.phase === "connected";
+        const response = await fetch(localReady ? `${BRIDGE_URL}/ai/status` : "/api/ai/status", {
+          cache: "no-store",
+          mode: localReady ? "cors" : "same-origin",
+          headers: localReady ? bridgeHeaders(bridgeToken) : undefined,
+        });
+        if (!response.ok) throw new Error("El motor no respondió.");
         const payload = (await response.json()) as { engine?: "ollama" | "basic"; model?: string | null; reason?: string };
         if (active) setAiState({ engine: payload.engine || "basic", model: payload.model || null, reason: payload.reason || "Motor local no disponible." });
       } catch {
-        if (active) setAiState({ engine: "basic", model: null, reason: "No pude consultar el motor local; usaré el análisis básico." });
+        try {
+          const response = await fetch("/api/ai/status", { cache: "no-store" });
+          const payload = (await response.json()) as { engine?: "ollama" | "basic"; model?: string | null; reason?: string };
+          if (active) setAiState({ engine: payload.engine || "basic", model: payload.model || null, reason: payload.reason || "Usaré el análisis básico." });
+        } catch {
+          if (active) setAiState({ engine: "basic", model: null, reason: "No pude consultar el motor local; usaré el análisis básico." });
+        }
       }
     };
     void detectAi();
     return () => {
       active = false;
     };
-  }, []);
+  }, [bridge.phase, bridgeToken]);
+
+  const telemetryConnected = connected && bridge.phase === "connected";
 
   const statuses = useMemo(
     () => ({
-      cpu: cpuStatus(metrics.cpu, connected),
-      gpu: gpuStatus(metrics.gpu, metrics.gpuTemp, connected),
-      memory: memoryStatus(metrics.memory, connected),
-      disk: diskStatus(metrics.disk, connected),
+      cpu: cpuStatus(metrics.cpu, telemetryConnected),
+      gpu: gpuStatus(metrics.gpu, metrics.gpuTemp, telemetryConnected),
+      memory: memoryStatus(metrics.memory, telemetryConnected),
+      disk: diskStatus(metrics.disk, telemetryConnected),
     }),
-    [connected, metrics],
+    [metrics, telemetryConnected],
   );
 
   const systemStatus = useMemo<Status>(() => {
     const values = Object.values(statuses);
     if (values.includes("critical")) return "critical";
     if (values.includes("warning")) return "warning";
-    if (!connected) return "neutral";
+    if (!telemetryConnected) return "neutral";
     if (values.includes("active")) return "active";
     return "healthy";
-  }, [connected, statuses]);
+  }, [statuses, telemetryConnected]);
 
   const systemHeadline = useMemo(() => {
     if (systemStatus === "neutral") return "Aún no puedo sentir tu PC.";
@@ -224,7 +294,7 @@ export default function Home() {
       ? systemStatus
       : mascotTouched
         ? "special"
-        : connected
+        : telemetryConnected
           ? "healthy"
           : "neutral";
 
@@ -238,13 +308,13 @@ export default function Home() {
     if (mascotTouched && mascotMood === "playful") return "Hola. Tu PC tiene mucho que contar.";
     if (mascotTouched && mascotMood === "focused") return "Modo técnico activado. Vamos pista por pista.";
     if (mascotTouched) return "Estoy aquí. Dime qué quieres entender.";
-    if (!connected) return "Estoy lista. Conecta la telemetría para verme trabajar.";
+    if (!telemetryConnected) return "Estoy lista. Conecta la telemetría para verme trabajar.";
     return "Todo está tranquilo.";
-  }, [connected, mascotMood, mascotTouched, statuses, systemStatus, thinking]);
+  }, [mascotMood, mascotTouched, statuses, systemStatus, telemetryConnected, thinking]);
 
   const notices = useMemo<Notice[]>(() => {
     const items: Notice[] = [];
-    if (!connected) {
+    if (!telemetryConnected) {
       items.push({ status: "neutral", symbol: "○", title: "TELEMETRÍA EN ESPERA", copy: "La interfaz usa datos de demostración hasta reconectar el monitor local." });
     }
     if (thinking) {
@@ -271,7 +341,45 @@ export default function Home() {
       items.push({ status: "special", symbol: "✦", title: "IA LOCAL LISTA", copy: "REE puede interpretar lo que ocurre sin enviar tus métricas a la nube.", action: { label: "CONVERSAR", view: "chat" } });
     }
     return items.slice(0, 2);
-  }, [aiState.engine, connected, statuses, thinking]);
+  }, [aiState.engine, statuses, telemetryConnected, thinking]);
+
+  const pairBridge = async () => {
+    if (!/^\d{6}$/.test(pairCode)) {
+      setPairError("Escribe el código de seis dígitos que muestra el agente local.");
+      return;
+    }
+    setPairError("");
+    setBridge((current) => ({ ...current, phase: "checking", reason: "Vinculando esta página con tu PC." }));
+    try {
+      const response = await fetch(`${BRIDGE_URL}/pair`, {
+        method: "POST",
+        mode: "cors",
+        headers: bridgeHeaders("", true),
+        body: JSON.stringify({ code: pairCode }),
+      });
+      const payload = (await response.json()) as { token?: string; error?: string };
+      if (!response.ok || !payload.token) throw new Error(payload.error || "No pude vincular la PC.");
+      window.localStorage.setItem("reebot_bridge_token", payload.token);
+      setBridgeToken(payload.token);
+      setPairCode("");
+      await refreshBridge(payload.token);
+    } catch (error) {
+      setPairError(error instanceof Error ? error.message : "No pude vincular la PC.");
+      setBridge((current) => ({ ...current, phase: bridge.available ? "pairing" : "offline" }));
+    }
+  };
+
+  const disconnectBridge = async () => {
+    try {
+      await fetch(`${BRIDGE_URL}/bridge/revoke`, { method: "POST", mode: "cors", headers: bridgeHeaders(bridgeToken, true) });
+    } finally {
+      window.localStorage.removeItem("reebot_bridge_token");
+      setBridgeToken("");
+      setConnected(false);
+      setPairCode("");
+      await refreshBridge("");
+    }
+  };
 
   const ask = async (override?: string) => {
     const message = (override || question).trim();
@@ -282,13 +390,32 @@ export default function Home() {
     setMascotTouched(false);
     setReply("Estoy cruzando tu pregunta con las métricas actuales...");
     try {
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, history: history.slice(-8), metrics, profile: mode, experience }),
-      });
-      const payload = (await response.json()) as AiReply;
-      if (!response.ok || !payload.reply) throw new Error(payload.error || "La IA local no respondió.");
+      const requestBody = JSON.stringify({ message, history: history.slice(-8), metrics, profile: mode, experience });
+      const endpoints = bridge.phase === "connected"
+        ? [{ url: `${BRIDGE_URL}/ai/chat`, local: true }, { url: "/api/ai/chat", local: false }]
+        : [{ url: "/api/ai/chat", local: false }];
+      let payload: AiReply | null = null;
+      let lastError = "La IA no respondió.";
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint.url, {
+            method: "POST",
+            mode: endpoint.local ? "cors" : "same-origin",
+            headers: endpoint.local ? bridgeHeaders(bridgeToken, true) : { "Content-Type": "application/json" },
+            body: requestBody,
+          });
+          const candidate = (await response.json()) as AiReply;
+          if (!response.ok || !candidate.reply) {
+            lastError = candidate.error || "La IA no respondió.";
+            continue;
+          }
+          payload = candidate;
+          break;
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : lastError;
+        }
+      }
+      if (!payload?.reply) throw new Error(lastError);
       setReply(payload.reply);
       setHistory((current) => [...current, { role: "user", content: message }, { role: "assistant", content: payload.reply as string }].slice(-10));
       setAiState({ engine: payload.engine || "basic", model: payload.model || null, reason: payload.reason || "Respuesta procesada localmente." });
@@ -334,7 +461,7 @@ export default function Home() {
   };
 
   return (
-    <main className="app-shell" data-mood={mascotMood}>
+    <main className="app-shell" data-mood={mascotMood} data-profile={profiles[mode].theme}>
       <header className="brand-header">
         <div className="brand-lockup" aria-label="REEBOT LAB">
           <span className="brand-reebot">REEBOT</span>
@@ -351,13 +478,13 @@ export default function Home() {
               <span>{String(index + 1).padStart(2, "0")}</span><b>{item.label}</b>
             </button>
           ))}
-          <div className="rail-status" data-status={connected ? "healthy" : "neutral"}><i />{connected ? "EN VIVO" : "DEMO"}</div>
+          <div className="rail-status" data-status={telemetryConnected ? "healthy" : "neutral"}><i />{telemetryConnected ? "EN VIVO" : "DEMO"}</div>
         </nav>
 
         <section className="content-area">
           <div className="content-topline">
             <span>{labels[view]}</span>
-            <div><span className="analysis-dot" data-status={paused ? "neutral" : thinking ? "active" : connected ? "healthy" : "neutral"} />{paused ? "MONITOREO EN PAUSA" : "ANALIZANDO EN TIEMPO REAL"}<button onClick={() => setPaused((value) => !value)}>{paused ? "REANUDAR" : "PAUSAR"}</button></div>
+            <div><span className="analysis-dot" data-status={paused ? "neutral" : thinking ? "active" : telemetryConnected ? "healthy" : "neutral"} />{paused ? "MONITOREO EN PAUSA" : "ANALIZANDO EN TIEMPO REAL"}<button onClick={() => setPaused((value) => !value)}>{paused ? "REANUDAR" : "PAUSAR"}</button></div>
           </div>
 
           {view === "inicio" && (
@@ -368,7 +495,7 @@ export default function Home() {
                   <div className="overview-copy">
                     <p className="eyebrow">ESTADO GENERAL DE NÉBULA</p>
                     <h1>{systemHeadline}</h1>
-                    <p>{profiles[mode].copy} {connected ? "Estoy leyendo tu equipo en tiempo real." : "Ahora mismo trabajo con una simulación segura."}</p>
+                    <p>{profiles[mode].copy} {telemetryConnected ? "Estoy leyendo tu equipo en tiempo real." : "Ahora mismo trabajo con una simulación segura."}</p>
                   </div>
                   <div className="profile-row"><span>MODO PREFERIDO</span><div>{(Object.keys(profiles) as (keyof typeof profiles)[]).map((profile) => <button key={profile} className={mode === profile ? "active" : ""} onClick={() => chooseMode(profile)}>{profile}</button>)}</div></div>
                 </article>
@@ -417,7 +544,7 @@ export default function Home() {
           {view === "chat" && <ConversationView aiState={aiState} aiLabel={aiLabel} question={question} reply={reply} thinking={thinking} setQuestion={setQuestion} ask={ask} />}
           {view === "lab" && <LabView diskStatus={statuses.disk} />}
           {view === "procesos" && <ProcessesView metrics={metrics} memoryStatusValue={statuses.memory} />}
-          {view === "ajustes" && <SettingsView experience={experience} setExperience={setExperience} aiLabel={aiLabel} aiState={aiState} />}
+          {view === "ajustes" && <SettingsView experience={experience} setExperience={setExperience} aiLabel={aiLabel} aiState={aiState} bridge={bridge} pairCode={pairCode} setPairCode={setPairCode} localPairCode={localPairCode} pairError={pairError} onPair={pairBridge} onRetry={() => { setBridge((current) => ({ ...current, phase: "checking", reason: "Buscando el agente local de REEBOT." })); void refreshBridge(); }} onDisconnect={disconnectBridge} />}
         </section>
       </div>
     </main>
@@ -487,11 +614,30 @@ function ProcessesView({ metrics, memoryStatusValue }: { metrics: Metrics; memor
   );
 }
 
-function SettingsView({ experience, setExperience, aiLabel, aiState }: { experience: Experience; setExperience: (experience: Experience) => void; aiLabel: string; aiState: AiState }) {
+function SettingsView({ experience, setExperience, aiLabel, aiState, bridge, pairCode, setPairCode, localPairCode, pairError, onPair, onRetry, onDisconnect }: {
+  experience: Experience;
+  setExperience: (experience: Experience) => void;
+  aiLabel: string;
+  aiState: AiState;
+  bridge: BridgeState;
+  pairCode: string;
+  setPairCode: (code: string) => void;
+  localPairCode: string | null;
+  pairError: string;
+  onPair: () => Promise<void>;
+  onRetry: () => void;
+  onDisconnect: () => Promise<void>;
+}) {
+  const bridgeStatus: Status = bridge.phase === "connected" ? "healthy" : bridge.phase === "pairing" ? "warning" : bridge.phase === "checking" ? "active" : "neutral";
+  const bridgeLabel = bridge.phase === "connected" ? "PC VINCULADA" : bridge.phase === "pairing" ? "CÓDIGO NECESARIO" : bridge.phase === "checking" ? "BUSCANDO" : "AGENTE DESCONECTADO";
   return (
     <section className="module black full-view status-surface" data-status="neutral">
       <ModuleTop code="REE/PREFERENCES-05" status="neutral" label="CONTROL DEL USUARIO" />
       <h1>Tu Reebot, tus reglas.</h1><p>Personaliza cómo se comunica REE. Ningún ajuste del sistema se modifica sin tu permiso.</p>
+      <div className="bridge-panel status-surface" data-status={bridgeStatus}>
+        <div className="bridge-copy"><span>BRIDGE/LOCAL-01</span><StatusTag status={bridgeStatus} label={bridgeLabel} /><h2>Conecta esta página con tu PC.</h2><p>{bridge.reason} El acceso queda limitado a REEBOT LAB y puedes revocarlo cuando quieras.</p></div>
+        {localPairCode ? <div className="pair-code"><small>CÓDIGO PARA LA VERSIÓN PUBLICADA</small><strong>{localPairCode}</strong><p>Abre la página publicada, entra a Ajustes y escribe este código.</p></div> : bridge.phase === "connected" ? <div className="bridge-action"><small>AGENTE {bridge.version || "LOCAL"}</small><b>{bridge.model || "TELEMETRÍA ACTIVA"}</b><button onClick={() => void onDisconnect()}>DESVINCULAR</button></div> : bridge.phase === "pairing" ? <div className="pair-form"><label htmlFor="pair-code">CÓDIGO DE SEIS DÍGITOS</label><div><input id="pair-code" value={pairCode} onChange={(event) => setPairCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" /><button disabled={pairCode.length !== 6 || bridge.phase === "checking"} onClick={() => void onPair()}>VINCULAR</button></div>{pairError && <p role="alert">{pairError}</p>}</div> : <div className="bridge-action"><small>PASO 01</small><b>ABRE START_REEBOT_AGENT.cmd</b><button onClick={onRetry}>{bridge.phase === "checking" ? "BUSCANDO..." : "VOLVER A PROBAR"}</button></div>}
+      </div>
       <div className="settings-grid"><label>NOMBRE DE LA PC<input defaultValue="Nébula" /></label><label>EXPERIENCIA<select value={experience} onChange={(event) => setExperience(event.target.value as Experience)}><option value="nuevo">Es mi primera PC</option><option value="intermedio">Tengo algo de técnico</option><option value="experto">Conozco bien mi PC</option></select></label><label>CONSUMO VISUAL<select defaultValue="visual"><option value="ahorro">Ahorro</option><option value="normal">Normal</option><option value="visual">Visual</option></select></label><label>MOTOR DE IA<input readOnly value={aiLabel} /></label></div>
       <p className="settings-note">{aiState.reason} REEBOT nunca aplicará cambios ni abrirá archivos sin pedir permiso.</p>
     </section>

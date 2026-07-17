@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -47,4 +48,22 @@ test("local basic AI answers without a model", async () => {
   const payload = await response.json();
   assert.equal(payload.engine, "basic");
   assert.match(payload.reply, /RAM|memoria/i);
+});
+
+test("local bridge requires pairing and restricts browser origins", async () => {
+  const bridge = await readFile(new URL("../telemetry-server.ps1", import.meta.url), "utf8");
+  assert.match(bridge, /\/bridge\/status/);
+  assert.match(bridge, /\/pair-code/);
+  assert.match(bridge, /Bearer \$script:bridgeToken/);
+  assert.match(bridge, /Access-Control-Allow-Private-Network/);
+  assert.doesNotMatch(bridge, /Access-Control-Allow-Origin'\s*,\s*'\*'/);
+});
+
+test("profiles expose Studio and distinct UI themes", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(page, /Studio:.*editar video, imagen y audio/s);
+  for (const profile of ["gaming", "studio", "chill", "movie"]) {
+    assert.match(styles, new RegExp(`data-profile=["']${profile}["']`));
+  }
 });

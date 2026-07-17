@@ -1,11 +1,11 @@
 # IA local de REEBOT LAB
 
-La primera integración usa **Ollama** como motor local y `qwen3.5:9b` como modelo recomendado para una GPU de 8 GB. No requiere suscripción ni envía las conversaciones a un servicio externo.
+REEBOT LAB usa **Ollama** como motor local y `qwen3.5:9b` como modelo recomendado para una GPU de 8 GB. No requiere suscripción y las conversaciones procesadas por el agente permanecen en la PC.
 
 ## Activación en Windows
 
 1. Instala Ollama desde <https://ollama.com/download/windows>.
-2. Abre PowerShell y descarga el modelo:
+2. Descarga el modelo:
 
    ```powershell
    ollama pull qwen3.5:9b
@@ -17,22 +17,41 @@ La primera integración usa **Ollama** como motor local y `qwen3.5:9b` como mode
    ollama run qwen3.5:9b
    ```
 
-4. Inicia REEBOT LAB. La aplicación detecta automáticamente la API local en `http://127.0.0.1:11434`.
+4. Abre `START_REEBOT_AGENT.cmd`.
 
-Si Ollama no está disponible, REEBOT conserva un modo básico local basado en las métricas recibidas. Ese modo explica CPU, RAM, disco y procesos, pero se identifica claramente y no simula ser un modelo de IA.
+El agente detecta Ollama en `http://127.0.0.1:11434`, muestra un código temporal de seis dígitos y escucha únicamente en el loopback local `127.0.0.1:47831`.
+
+## Vinculación con la página publicada
+
+La página publicada no puede usar Ollama directamente. Debe vincularse con el agente local:
+
+1. Mantén abierta la ventana de `START_REEBOT_AGENT.cmd`.
+2. En REEBOT LAB abre **Ajustes**.
+3. Ingresa el código mostrado por el agente.
+4. El navegador recibe un token local persistente. El código cambia después de usarse.
+
+Después de vincularse, la telemetría y las preguntas viajan directamente entre ese navegador y `127.0.0.1`. Si el agente no está disponible, la interfaz regresa al modo demostración y al análisis básico.
+
+## Seguridad del puente local
+
+- Sólo permite la interfaz local y el dominio publicado de REEBOT LAB.
+- Requiere token para métricas e IA desde la versión publicada.
+- Bloquea el código durante un minuto después de cinco intentos fallidos.
+- Permite revocar el token desde Ajustes.
+- No escucha en la red local ni abre puertos externos.
+- No lee archivos, cierra procesos ni cambia configuraciones.
 
 ## Configuración opcional
 
-Antes de iniciar la aplicación puedes cambiar la dirección o el modelo:
+Antes de iniciar el agente puedes cambiar el modelo:
 
 ```powershell
-$env:REEBOT_OLLAMA_URL = "http://127.0.0.1:11434"
 $env:REEBOT_AI_MODEL = "qwen3.5:9b"
 ```
 
-## Límites de seguridad de esta versión
+## Límites actuales
 
-- La IA sólo recibe la pregunta, el perfil seleccionado y una instantánea de métricas.
-- No lee archivos ni inspecciona rutas por sí sola.
-- No cierra procesos ni cambia configuraciones.
-- Debe distinguir observaciones de hipótesis y pedir permiso antes de proponer una acción sobre el equipo.
+- La IA recibe la pregunta, el perfil seleccionado y una instantánea de métricas.
+- La CPU individual por proceso todavía no se mide de forma fiable.
+- Los experimentos guiados todavía explican el procedimiento, pero no ejecutan acciones.
+- La primera vinculación requiere copiar manualmente el código del agente.
