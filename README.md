@@ -14,7 +14,8 @@ El proyecto está en **Early Access**. La interfaz y la telemetría local ya fun
 - Interfaz oficial responsive de REEBOT LAB.
 - Mascota con estados de ánimo.
 - Perfiles Gaming, Estudio, Chill y Movie.
-- Chat demostrativo con explicaciones contextuales.
+- Chat local con Ollama, historial breve y contexto de métricas.
+- Modo básico de respaldo cuando el modelo no está activo.
 - Propuesta de experimentos guiados.
 - Vistas de procesos, laboratorio y personalización.
 
@@ -22,6 +23,7 @@ El proyecto está en **Early Access**. La interfaz y la telemetría local ya fun
 
 - **UI:** React 19, TypeScript, Tailwind CSS y vinext/Vite.
 - **Telemetría:** PowerShell y CIM/WMI de Windows.
+- **IA local:** Ollama con `qwen3.5:9b` como modelo recomendado.
 - **Comunicación local:** HTTP en `127.0.0.1:47831`.
 - **Plataforma inicial:** Windows.
 
@@ -59,6 +61,10 @@ npm run build
 - Los experimentos restauran el estado anterior al terminar.
 - Los datos permanecen localmente salvo autorización explícita.
 - La aplicación explica antes de recomendar.
+
+## IA local
+
+El chat puede conectarse a Ollama y usar `qwen3.5:9b` sin suscripciones ni envío de conversaciones a la nube. Si el motor no está activo, REEBOT mantiene un modo básico basado en reglas y métricas. Consulta [LOCAL_AI.md](./LOCAL_AI.md) para activarlo en Windows.
 
 ## Participar
 
