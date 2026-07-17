@@ -16,7 +16,7 @@ $target = (Resolve-Path -LiteralPath $TargetRoot).Path.TrimEnd([IO.Path]::Direct
 $output = [IO.Path]::GetFullPath($OutputPath)
 $staging = Join-Path ([IO.Path]::GetTempPath()) ("reebot-update-" + [Guid]::NewGuid().ToString('N'))
 $filesRoot = Join-Path $staging 'files'
-$excludedPattern = '(^|[\\/])(\.git|node_modules|\.packages|dist|\.next|outputs|work)([\\/]|$)|\.log$'
+$excludedPattern = '(^|[\\/])(\.git|node_modules|\.packages|dist|\.next|outputs|work)([\\/]|$)|\.log$|(^|[\\/])REEBOT-LAB-.*\.zip$'
 
 try {
   New-Item -ItemType Directory -Path $filesRoot -Force | Out-Null

@@ -242,4 +242,5 @@ test("incremental updater requires release digests and preserves the old version
   assert.doesNotMatch(applyUpdate, /Remove-Item[^\n]+\$baseRoot/);
   assert.match(buildUpdate, /changedPaths/);
   assert.match(buildUpdate, /deletePaths/);
+  assert.match(buildUpdate, /REEBOT-LAB-\.\*\\\.zip/);
 });
