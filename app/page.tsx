@@ -318,10 +318,10 @@ export default function Home() {
       items.push({ status: "neutral", symbol: "○", title: "TELEMETRÍA EN ESPERA", copy: "La interfaz usa datos de demostración hasta reconectar el monitor local." });
     }
     if (thinking) {
-      items.push({ status: "active", symbol: "⌁", title: "REE ESTÁ ANALIZANDO", copy: "Está comparando actividad, temperatura y procesos antes de responder." });
+      items.push({ status: "active", symbol: "⌁", title: "REEBI ESTÁ ANALIZANDO", copy: "Está comparando actividad, temperatura y procesos antes de responder." });
     }
     if (statuses.gpu === "critical") {
-      items.push({ status: "critical", symbol: "!", title: "TEMPERATURA CRÍTICA", copy: "Conviene detener la carga y revisar ventilación.", action: { label: "PREGUNTAR A REE", view: "chat" } });
+      items.push({ status: "critical", symbol: "!", title: "TEMPERATURA CRÍTICA", copy: "Conviene detener la carga y revisar ventilación.", action: { label: "PREGUNTAR A REEBI", view: "chat" } });
     } else if (statuses.gpu === "warning") {
       items.push({ status: "warning", symbol: "△", title: "GPU EN OBSERVACIÓN", copy: "La carga es válida; la temperatura es lo que debemos vigilar.", action: { label: "REVISAR", view: "chat" } });
     }
@@ -338,7 +338,7 @@ export default function Home() {
       items.push({ status: "healthy", symbol: "✓", title: "TODO EN ORDEN", copy: "Tu sistema responde con normalidad. No necesitas hacer nada." });
     }
     if (aiState.engine === "ollama" && items.length < 2) {
-      items.push({ status: "special", symbol: "✦", title: "IA LOCAL LISTA", copy: "REE puede interpretar lo que ocurre sin enviar tus métricas a la nube.", action: { label: "CONVERSAR", view: "chat" } });
+      items.push({ status: "special", symbol: "✦", title: "IA LOCAL LISTA", copy: "REEBI puede interpretar lo que ocurre sin enviar tus métricas a la nube.", action: { label: "CONVERSAR", view: "chat" } });
     }
     return items.slice(0, 2);
   }, [aiState.engine, statuses, telemetryConnected, thinking]);
@@ -468,7 +468,7 @@ export default function Home() {
           <span className="brand-lab">LAB</span>
           <span className="brand-star" aria-hidden="true"><i />✦<i /></span>
         </div>
-        <div className="brand-meta"><span>PERSONAL COMPUTER COMPANION</span><b>EARLY ACCESS / 0.3.0</b></div>
+        <div className="brand-meta"><span>PERSONAL COMPUTER COMPANION</span><b>DESKTOP PREVIEW / 0.4.0</b></div>
       </header>
 
       <div className="workspace">
@@ -489,7 +489,7 @@ export default function Home() {
 
           {view === "inicio" && (
             <div className="home-flow">
-              <section className="hero-grid" aria-label="Estado general y REE">
+              <section className="hero-grid" aria-label="Estado general y REEBI">
                 <article className="module black system-overview status-surface" data-status={systemStatus}>
                   <ModuleTop code="SYS/OVERVIEW-00" status={systemStatus} label={statusLabels[systemStatus]} />
                   <div className="overview-copy">
@@ -501,14 +501,14 @@ export default function Home() {
                 </article>
 
                 <article className="mascot-card status-surface" data-status={reeStatus} data-reaction={mascotReaction % 2}>
-                  <div className="mascot-top"><span>REE / ID-001</span><StatusTag status={reeStatus} label={thinking ? "ANALIZANDO" : statusLabels[reeStatus]} /></div>
+                  <div className="mascot-top"><span>REEBI / ID-001</span><StatusTag status={reeStatus} label={thinking ? "ANALIZANDO" : statusLabels[reeStatus]} /></div>
                   <div className="construction-mark mark-a" aria-hidden="true" /><div className="construction-mark mark-b" aria-hidden="true" />
                   <div className="mascot-glow" aria-hidden="true" />
-                  <div className="mascot-speech" role="status" aria-live="polite"><span>REE DICE</span><p>{reeMessage}</p><button onClick={() => openConversation("¿Qué estás viendo en mi PC?")}>HABLAR CON REE ↗</button></div>
-                  <button className="mascot-button" onClick={cycleMascotMood} onPointerMove={moveMascot} onPointerLeave={resetMascot} aria-label="Interactuar con REE">
+                  <div className="mascot-speech" role="status" aria-live="polite"><span>REEBI DICE</span><p>{reeMessage}</p><button onClick={() => openConversation("¿Qué estás viendo en mi PC?")}>HABLAR CON REEBI ↗</button></div>
+                  <button className="mascot-button" onClick={cycleMascotMood} onPointerMove={moveMascot} onPointerLeave={resetMascot} aria-label="Interactuar con REEBI">
                     <Image className="mascot-image" src="/reebot-mascot.png" alt="" width={1254} height={1254} priority unoptimized />
                   </button>
-                  <div className="mascot-caption">TOCA A REE PARA INTERACTUAR</div>
+                  <div className="mascot-caption">TOCA A REEBI PARA INTERACTUAR</div>
                 </article>
               </section>
 
@@ -532,9 +532,9 @@ export default function Home() {
                   <div className="experiment-actions"><button onClick={() => setReply("Te explicaré cada paso y no ejecutaré nada sin tu permiso.")}>SÓLO EXPLÍCAME</button><button className="light" onClick={() => setView("lab")}>HACERLO JUNTOS</button></div>
                 </article>
                 <article className="conversation-card status-surface" data-status={thinking ? "active" : "special"}>
-                  <div className="module-top"><span>REE/CHAT-02</span><div className={`ai-badge ${aiState.engine}`} title={aiState.reason}><i />{aiLabel}</div></div>
+                  <div className="module-top"><span>REEBI/CHAT-02</span><div className={`ai-badge ${aiState.engine}`} title={aiState.reason}><i />{aiLabel}</div></div>
                   <div><p className="eyebrow">CONVERSACIÓN DIRECTA</p><h2>Pregúntale algo a tu PC.</h2></div>
-                  <div className="quick-chat"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void ask(); }} aria-label="Pregunta para REE" /><button disabled={thinking} onClick={() => void ask()}>{thinking ? "PENSANDO" : "ENVIAR ↗"}</button></div>
+                  <div className="quick-chat"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void ask(); }} aria-label="Pregunta para REEBI" /><button disabled={thinking} onClick={() => void ask()}>{thinking ? "PENSANDO" : "ENVIAR ↗"}</button></div>
                   <p className={thinking ? "assistant-message thinking" : "assistant-message"} aria-live="polite">{reply}</p>
                 </article>
               </section>
@@ -584,12 +584,12 @@ function NoticeCard({ notice, onNavigate }: { notice: Notice; onNavigate: (view:
 function ConversationView({ aiState, aiLabel, question, reply, thinking, setQuestion, ask }: { aiState: AiState; aiLabel: string; question: string; reply: string; thinking: boolean; setQuestion: (value: string) => void; ask: (override?: string) => Promise<void> }) {
   return (
     <section className="module black full-view status-surface" data-status={thinking ? "active" : "special"}>
-      <ModuleTop code="REE/CONVERSATION-02" status={thinking ? "active" : "special"} label={thinking ? "ANALIZANDO" : "LISTA PARA ESCUCHAR"} />
+      <ModuleTop code="REEBI/CONVERSATION-02" status={thinking ? "active" : "special"} label={thinking ? "ANALIZANDO" : "LISTA PARA ESCUCHAR"} />
       <div className={`ai-badge dark ${aiState.engine}`} title={aiState.reason}><i />{aiLabel}</div>
-      <h1>Habla con tu PC.</h1><p>Pregunta por procesos, archivos o rendimiento. REE responderá sólo con las métricas que realmente puede ver.</p>
+      <h1>Habla con tu PC.</h1><p>Pregunta por procesos, archivos o rendimiento. REEBI responderá sólo con las métricas que realmente puede ver.</p>
       <div className="prompt-chips">{suggestedQuestions.map((prompt) => <button key={prompt} onClick={() => void ask(prompt)} disabled={thinking}>{prompt}</button>)}</div>
-      <div className="full-chat"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void ask(); }} placeholder="¿Qué te está pasando?" aria-label="Pregunta para REE" /><button disabled={thinking} onClick={() => void ask()}>{thinking ? "ANALIZANDO..." : "PREGUNTAR"}</button></div>
-      <div className="assistant-reply"><div><b>REEBOT</b><small>{aiState.engine === "ollama" ? "MODELO LOCAL" : "MOTOR BÁSICO"}</small></div><p className={thinking ? "assistant-message thinking" : "assistant-message"} aria-live="polite">{reply}</p></div>
+      <div className="full-chat"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void ask(); }} placeholder="¿Qué te está pasando?" aria-label="Pregunta para REEBI" /><button disabled={thinking} onClick={() => void ask()}>{thinking ? "ANALIZANDO..." : "PREGUNTAR"}</button></div>
+      <div className="assistant-reply"><div><b>REEBI</b><small>{aiState.engine === "ollama" ? "MODELO LOCAL" : "MOTOR BÁSICO"}</small></div><p className={thinking ? "assistant-message thinking" : "assistant-message"} aria-live="polite">{reply}</p></div>
     </section>
   );
 }
@@ -632,8 +632,8 @@ function SettingsView({ experience, setExperience, aiLabel, aiState, bridge, pai
   const bridgeLabel = bridge.phase === "connected" ? "PC VINCULADA" : bridge.phase === "pairing" ? "CÓDIGO NECESARIO" : bridge.phase === "checking" ? "BUSCANDO" : "AGENTE DESCONECTADO";
   return (
     <section className="module black full-view status-surface" data-status="neutral">
-      <ModuleTop code="REE/PREFERENCES-05" status="neutral" label="CONTROL DEL USUARIO" />
-      <h1>Tu Reebot, tus reglas.</h1><p>Personaliza cómo se comunica REE. Ningún ajuste del sistema se modifica sin tu permiso.</p>
+      <ModuleTop code="REEBI/PREFERENCES-05" status="neutral" label="CONTROL DEL USUARIO" />
+      <h1>Tu Reebot, tus reglas.</h1><p>Personaliza cómo se comunica REEBI. Ningún ajuste del sistema se modifica sin tu permiso.</p>
       <div className="bridge-panel status-surface" data-status={bridgeStatus}>
         <div className="bridge-copy"><span>BRIDGE/LOCAL-01</span><StatusTag status={bridgeStatus} label={bridgeLabel} /><h2>Conecta esta página con tu PC.</h2><p>{bridge.reason} El acceso queda limitado a REEBOT LAB y puedes revocarlo cuando quieras.</p></div>
         {localPairCode ? <div className="pair-code"><small>CÓDIGO PARA LA VERSIÓN PUBLICADA</small><strong>{localPairCode}</strong><p>Abre la página publicada, entra a Ajustes y escribe este código.</p></div> : bridge.phase === "connected" ? <div className="bridge-action"><small>AGENTE {bridge.version || "LOCAL"}</small><b>{bridge.model || "TELEMETRÍA ACTIVA"}</b><button onClick={() => void onDisconnect()}>DESVINCULAR</button></div> : bridge.phase === "pairing" ? <div className="pair-form"><label htmlFor="pair-code">CÓDIGO DE SEIS DÍGITOS</label><div><input id="pair-code" value={pairCode} onChange={(event) => setPairCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000" /><button disabled={pairCode.length !== 6 || bridge.phase === "checking"} onClick={() => void onPair()}>VINCULAR</button></div>{pairError && <p role="alert">{pairError}</p>}</div> : <div className="bridge-action"><small>PASO 01</small><b>ABRE START_REEBOT_AGENT.cmd</b><button onClick={onRetry}>{bridge.phase === "checking" ? "BUSCANDO..." : "VOLVER A PROBAR"}</button></div>}

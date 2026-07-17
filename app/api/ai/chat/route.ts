@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   const question = typeof body.message === "string" ? body.message.trim().slice(0, 2000) : "";
   if (!question) {
-    return Response.json({ error: "Escribe una pregunta para REE." }, { status: 400 });
+    return Response.json({ error: "Escribe una pregunta para REEBI." }, { status: 400 });
   }
 
   const metrics = normalizeMetrics(body.metrics);

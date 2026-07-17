@@ -2,7 +2,7 @@
 
 > Tu PC, por fin entendible.
 
-REEBOT LAB es un compañero inteligente y open source para Windows que permite conversar con tu PC, entender su rendimiento, diagnosticar problemas y encontrar soluciones mediante experimentos guiados, manteniendo siempre al usuario en control.
+REEBOT LAB es un compañero inteligente y open source para Windows que permite conversar con tu PC, entender su rendimiento, diagnosticar problemas y encontrar soluciones mediante experimentos guiados, manteniendo siempre al usuario en control. Su IA y mascota se llama **REEBI**.
 
 ## Estado
 
@@ -12,7 +12,7 @@ El proyecto está en **Early Access**. La interfaz, la telemetría local, el age
 
 - Monitor local de CPU, GPU, temperatura, VRAM, RAM, discos y procesos.
 - Interfaz responsive con estados semánticos y avisos automáticos.
-- Mascota interactiva conectada al estado del equipo.
+- REEBI, mascota e IA interactiva conectada al estado del equipo.
 - Perfiles Gaming, Studio, Chill y Movie con acentos visuales propios.
 - Chat local con Ollama, historial breve y contexto de métricas.
 - Consola directa para conversar con `qwen3.5:9b` sin pasar por la interfaz web.
@@ -37,7 +37,9 @@ El proyecto está en **Early Access**. La interfaz, la telemetría local, el age
 
 ## Inicio rápido local
 
-La forma recomendada en Windows es abrir `REEBOT LAB.exe`. El launcher ejecutable comprueba Node.js, el agente local y Ollama; muestra el código de vinculación y permite abrir la interfaz local, la versión web o la consola directa de IA. Si falta Node.js, ofrece instalarlo con `winget`; la primera instalación de dependencias siempre pide confirmación. `REEBOT_LAB_LAUNCHER.cmd` permanece como alternativa técnica.
+La forma recomendada en Windows es abrir `REEBOT LAB.exe`. En el primer inicio, el launcher pide permiso para instalar la aplicación en `C:\Program Files\REEBOT LAB` y crea accesos directos en Inicio y el escritorio. Los componentes modificables se guardan en `%LOCALAPPDATA%\REEBOT LAB`, evitando depender de la carpeta Descargas y evitando permisos de administrador en cada inicio.
+
+Después de instalarse, el launcher comprueba Node.js, el agente local y Ollama y abre la interfaz dentro de **REEBOT LAB Desktop**, no en el navegador. El servicio interno escucha solamente en `localhost`. Si falta Node.js, ofrece instalarlo con `winget`; la primera instalación de dependencias siempre pide confirmación. `REEBOT_LAB_LAUNCHER.cmd` permanece como alternativa técnica.
 
 ```powershell
 npm ci

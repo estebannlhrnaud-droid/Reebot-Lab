@@ -3,10 +3,11 @@ param(
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
-$launcherVersion = '0.3.0'
+$launcherVersion = '0.4.0'
 $projectRoot = $PSScriptRoot
 $publishedUrl = 'https://reebot-lab-preview.estebannlhrnaud.chatgpt.site'
 $localUrl = 'http://localhost:3000'
+$desktopAppPath = Join-Path $projectRoot 'desktop-runtime\REEBOT LAB Desktop.exe'
 $bridgePort = 47831
 $script:nodePath = $null
 $script:npmPath = $null
@@ -130,6 +131,25 @@ function Open-Url([string]$url) {
   }
 }
 
+function Open-DesktopApp {
+  if (-not (Test-Path -LiteralPath $desktopAppPath)) {
+    [System.Windows.Forms.MessageBox]::Show(
+      'No encontre la app de escritorio. Descarga el paquete completo de REEBOT LAB o ejecuta build-launcher.ps1.',
+      'Falta REEBOT LAB Desktop',
+      [System.Windows.Forms.MessageBoxButtons]::OK,
+      [System.Windows.Forms.MessageBoxIcon]::Error
+    ) | Out-Null
+    return $false
+  }
+  try {
+    Start-Process -FilePath $desktopAppPath -ArgumentList @('--url', ('"{0}"' -f $localUrl)) -WorkingDirectory (Split-Path -Parent $desktopAppPath) | Out-Null
+    return $true
+  } catch {
+    [System.Windows.Forms.MessageBox]::Show("No pude abrir la app de escritorio.`r`n`r`n$($_.Exception.Message)", 'REEBOT LAB', [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    return $false
+  }
+}
+
 function Install-NodeJs {
   $winget = Find-Executable 'winget.exe' @(
     (Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\winget.exe')
@@ -234,6 +254,10 @@ function Confirm-Dependencies {
 }
 
 function Start-LocalUi {
+  if (-not (Test-Path -LiteralPath $desktopAppPath)) {
+    [void](Open-DesktopApp)
+    return
+  }
   Refresh-ExecutablePaths
   $nodeVersion = Get-NodeVersion
   if (-not $nodeVersion -or $nodeVersion -lt [version]'22.13.0' -or -not $script:npmPath) {
@@ -321,16 +345,16 @@ function Update-LauncherStatus {
 
   $uiReady = Test-WebReady $localUrl
   if ($uiReady) {
-    $script:launchButton.Text = 'ABRIR REEBOT'
+    $script:launchButton.Text = 'ABRIR APP'
     $script:launchButton.Enabled = $true
     $script:activityLabel.Text = if ($ollama.Ready) { 'SISTEMA LISTO + IA LOCAL' } else { 'SISTEMA LISTO + ANALISIS BASICO' }
     $script:activityLabel.ForeColor = [Drawing.Color]::FromArgb(32, 130, 90)
     if (-not $script:openedWhenReady -and $script:autoOpenLocal) {
       $script:openedWhenReady = $true
-      Open-Url $localUrl
+      Open-DesktopApp
     }
   } elseif ($script:activityLabel.Text -ne 'INICIANDO REEBOT...' -and $script:activityLabel.Text -ne 'PREPARANDO COMPONENTES...') {
-    $script:launchButton.Text = 'INICIAR EN LOCAL'
+    $script:launchButton.Text = 'INICIAR APP'
     $script:launchButton.Enabled = $true
     $script:activityLabel.Text = 'LISTO PARA INICIAR'
     $script:activityLabel.ForeColor = [Drawing.Color]::FromArgb(105, 105, 105)
@@ -389,7 +413,7 @@ $pairPanel.Controls.Add($script:copyButton)
 $script:form.Controls.Add($pairPanel)
 
 $script:launchButton = New-Object System.Windows.Forms.Button
-$script:launchButton.Text = 'INICIAR EN LOCAL'
+$script:launchButton.Text = 'INICIAR APP'
 $script:launchButton.Location = New-Object Drawing.Point(34, 389)
 $script:launchButton.Size = New-Object Drawing.Size(336, 54)
 $script:launchButton.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
@@ -398,7 +422,7 @@ $script:launchButton.BackColor = [Drawing.Color]::FromArgb(8, 8, 10)
 $script:launchButton.ForeColor = [Drawing.Color]::White
 $script:launchButton.Font = New-Object Drawing.Font('Segoe UI', 10, [Drawing.FontStyle]::Bold)
 $script:launchButton.Add_Click({
-  if (Test-WebReady $localUrl) { Open-Url $localUrl } else { Start-LocalUi }
+  if (Test-WebReady $localUrl) { Open-DesktopApp } else { Start-LocalUi }
 })
 $script:form.Controls.Add($script:launchButton)
 

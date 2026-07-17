@@ -14,8 +14,8 @@ using System.Windows.Forms;
 [assembly: AssemblyCompany("REEBOT LAB")]
 [assembly: AssemblyProduct("REEBOT LAB")]
 [assembly: AssemblyCopyright("REEBOT LAB Early Access")]
-[assembly: AssemblyVersion("0.3.0.0")]
-[assembly: AssemblyFileVersion("0.3.0.0")]
+[assembly: AssemblyVersion("0.4.0.0")]
+[assembly: AssemblyFileVersion("0.4.0.0")]
 
 namespace ReebotLab.Launcher
 {
@@ -114,13 +114,85 @@ namespace ReebotLab.Launcher
         public string Label;
     }
 
+    internal static class Installation
+    {
+        private const string Version = "0.4.0";
+
+        public static bool IsInstalledPath(string directory)
+        {
+            string programFiles = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string candidate = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            return candidate.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool HandleFirstRun(string[] args)
+        {
+            string sourceRoot = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            if (IsInstalledPath(sourceRoot) || HasArgument(args, "--portable") || HasArgument(args, "--installed-launch")) return false;
+
+            DialogResult choice = MessageBox.Show(
+                "REEBOT LAB se instalara en Archivos de programa y creara accesos directos. Los datos personales y componentes que cambian se guardaran en tu carpeta local de usuario.\r\n\r\nContinuar?",
+                "Instalar REEBOT LAB",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+            if (choice != DialogResult.Yes) return true;
+
+            string installer = Path.Combine(sourceRoot, "install-reebot.ps1");
+            if (!File.Exists(installer))
+            {
+                MessageBox.Show("El paquete esta incompleto: falta install-reebot.ps1.", "REEBOT LAB", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return true;
+            }
+
+            try
+            {
+                string targetRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "REEBOT LAB", "app-" + Version);
+                string targetLauncher = Path.Combine(targetRoot, "REEBOT LAB.exe");
+                ProcessStartInfo info = new ProcessStartInfo("powershell.exe");
+                info.Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + installer + "\" -SourceRoot \"" + sourceRoot + "\" -Version \"" + Version + "\"";
+                info.UseShellExecute = true;
+                info.Verb = "runas";
+                info.WindowStyle = ProcessWindowStyle.Normal;
+                using (Process process = Process.Start(info))
+                {
+                    process.WaitForExit();
+                    if (process.ExitCode != 0) throw new InvalidOperationException("El instalador termino con codigo " + process.ExitCode + ".");
+                }
+                if (!File.Exists(targetLauncher)) throw new FileNotFoundException("La instalacion termino, pero no se encontro el launcher instalado.", targetLauncher);
+
+                ProcessStartInfo launch = new ProcessStartInfo(targetLauncher, "--installed-launch");
+                launch.WorkingDirectory = targetRoot;
+                launch.UseShellExecute = true;
+                Process.Start(launch);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show("No pude instalar REEBOT LAB.\r\n\r\n" + exception.Message, "Instalacion incompleta", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return true;
+            }
+        }
+
+        private static bool HasArgument(string[] args, string expected)
+        {
+            if (args == null) return false;
+            foreach (string value in args)
+            {
+                if (string.Equals(value, expected, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+    }
+
     internal sealed class LauncherForm : Form
     {
-        private const string LauncherVersion = "0.3.0";
+        private const string LauncherVersion = "0.4.0";
         private const string PublishedUrl = "https://reebot-lab-preview.estebannlhrnaud.chatgpt.site";
         private const string LocalUrl = "http://localhost:3000";
         private const int BridgePort = 47831;
 
+        private readonly string installRoot;
         private readonly string projectRoot;
         private string nodePath;
         private string npmPath;
@@ -149,13 +221,57 @@ namespace ReebotLab.Launcher
             get { return Path.Combine(projectRoot, ".reebot-launcher.log"); }
         }
 
+        private string DesktopAppPath
+        {
+            get { return Path.Combine(installRoot, "desktop-runtime", "REEBOT LAB Desktop.exe"); }
+        }
+
         public LauncherForm()
         {
-            projectRoot = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            installRoot = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            projectRoot = PrepareRuntime(installRoot);
             BuildInterface();
             RefreshExecutablePaths();
             RefreshSystemStatus();
             statusTimer.Start();
+        }
+
+        private static string PrepareRuntime(string sourceRoot)
+        {
+            if (!Installation.IsInstalledPath(sourceRoot)) return sourceRoot;
+            string runtimeRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "REEBOT LAB",
+                "runtime",
+                LauncherVersion
+            );
+            CopyRuntimeDirectory(sourceRoot, runtimeRoot, true);
+            return runtimeRoot;
+        }
+
+        private static void CopyRuntimeDirectory(string source, string destination, bool root)
+        {
+            Directory.CreateDirectory(destination);
+            foreach (string file in Directory.GetFiles(source))
+            {
+                string name = Path.GetFileName(file);
+                if (name.EndsWith(".log", StringComparison.OrdinalIgnoreCase)) continue;
+                if (root && (string.Equals(name, "REEBOT LAB.exe", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "install-reebot.ps1", StringComparison.OrdinalIgnoreCase))) continue;
+                File.Copy(file, Path.Combine(destination, name), true);
+            }
+            foreach (string directory in Directory.GetDirectories(source))
+            {
+                string name = Path.GetFileName(directory);
+                if (string.Equals(name, "node_modules", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, ".packages", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, "desktop-runtime", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, ".git", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, "dist", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, ".next", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, "outputs", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, "work", StringComparison.OrdinalIgnoreCase)) continue;
+                CopyRuntimeDirectory(directory, Path.Combine(destination, name), false);
+            }
         }
 
         private Font UiFont(float size, FontStyle style)
@@ -250,10 +366,10 @@ namespace ReebotLab.Launcher
             };
             pairing.Controls.Add(copyCodeButton);
 
-            localButton = MakeButton("INICIAR EN LOCAL", 42, 486, 407, 58, ink, Color.White, ink);
+            localButton = MakeButton("INICIAR APP", 42, 486, 407, 58, ink, Color.White, ink);
             localButton.Click += delegate
             {
-                if (TestWebReady(LocalUrl)) OpenUrl(LocalUrl);
+                if (TestWebReady(LocalUrl)) OpenDesktopApp();
                 else StartLocal();
             };
             Controls.Add(localButton);
@@ -537,19 +653,19 @@ namespace ReebotLab.Launcher
             bool localReady = TestWebReady(LocalUrl);
             if (localReady)
             {
-                localButton.Text = "ABRIR REEBOT";
+                localButton.Text = "ABRIR APP";
                 localButton.Enabled = true;
                 activityLabel.Text = ollama.Ready ? "SISTEMA LISTO  /  IA LOCAL ACTIVA" : "SISTEMA LISTO  /  ANALISIS BASICO";
                 activityLabel.ForeColor = Color.FromArgb(22, 132, 92);
                 if (openWhenReady && !openedLocal)
                 {
                     openedLocal = true;
-                    OpenUrl(LocalUrl);
+                    OpenDesktopApp();
                 }
             }
             else if (!actionInProgress)
             {
-                localButton.Text = "INICIAR EN LOCAL";
+                localButton.Text = "INICIAR APP";
                 localButton.Enabled = true;
                 activityLabel.Text = "LISTO PARA INICIAR";
                 activityLabel.ForeColor = Color.FromArgb(98, 98, 108);
@@ -579,6 +695,34 @@ namespace ReebotLab.Launcher
                     MessageBox.Show("Windows no pudo abrir el navegador. La direccion se copio al portapapeles.", "REEBOT LAB", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return false;
                 }
+            }
+        }
+
+        private bool OpenDesktopApp()
+        {
+            if (!File.Exists(DesktopAppPath))
+            {
+                MessageBox.Show(
+                    "No encontre la app de escritorio. Vuelve a descargar la version completa de REEBOT LAB.",
+                    "Falta REEBOT LAB Desktop",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return false;
+            }
+            try
+            {
+                ProcessStartInfo info = new ProcessStartInfo(DesktopAppPath);
+                info.Arguments = "--url \"" + LocalUrl + "\"";
+                info.WorkingDirectory = Path.GetDirectoryName(DesktopAppPath);
+                info.UseShellExecute = true;
+                Process.Start(info);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show("No pude abrir la app de escritorio.\r\n\r\n" + exception.Message, "REEBOT LAB", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
@@ -733,6 +877,11 @@ namespace ReebotLab.Launcher
             Refresh();
             try
             {
+                if (!File.Exists(DesktopAppPath))
+                {
+                    MessageBox.Show("No encontre desktop-runtime\\REEBOT LAB Desktop.exe. Descarga el paquete completo o ejecuta build-launcher.ps1.", "Falta la app de escritorio", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 RefreshExecutablePaths();
                 Version nodeVersion = GetNodeVersion();
                 bool nodeReady = nodeVersion != null && nodeVersion >= new Version(22, 13, 0) && !string.IsNullOrEmpty(npmPath);
@@ -753,7 +902,7 @@ namespace ReebotLab.Launcher
                 if (!StartUiProcess()) return;
                 openWhenReady = true;
                 openedLocal = false;
-                activityLabel.Text = "INICIANDO REEBOT...";
+                activityLabel.Text = "INICIANDO APP DE REEBOT...";
                 activityLabel.ForeColor = violet;
             }
             catch (Exception exception)
@@ -788,12 +937,17 @@ namespace ReebotLab.Launcher
                 string root = AppDomain.CurrentDomain.BaseDirectory;
                 bool ready = File.Exists(Path.Combine(root, "telemetry-server.ps1"))
                     && File.Exists(Path.Combine(root, "package.json"))
-                    && File.Exists(Path.Combine(root, "public", "reebot-mascot.png"));
+                    && File.Exists(Path.Combine(root, "install-reebot.ps1"))
+                    && File.Exists(Path.Combine(root, "public", "reebot-mascot.png"))
+                    && File.Exists(Path.Combine(root, "desktop-runtime", "REEBOT LAB Desktop.exe"))
+                    && File.Exists(Path.Combine(root, "desktop-runtime", "Microsoft.Web.WebView2.Core.dll"))
+                    && File.Exists(Path.Combine(root, "desktop-runtime", "WebView2Loader.dll"));
                 return ready ? 0 : 2;
             }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            if (Installation.HandleFirstRun(args)) return 0;
             Application.Run(new LauncherForm());
             return 0;
         }

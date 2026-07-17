@@ -1,6 +1,8 @@
 # IA local de REEBOT LAB
 
-REEBOT LAB usa **Ollama** como motor local y `qwen3.5:9b` como modelo recomendado para una GPU de 8 GB. No requiere suscripción y las conversaciones procesadas por el agente permanecen en la PC.
+REEBOT LAB usa **Ollama** como motor local y `qwen3.5:9b` como modelo recomendado para una GPU de 8 GB. La IA y mascota se llama **REEBI**. No requiere suscripción y las conversaciones procesadas por el agente permanecen en la PC.
+
+La interfaz local se muestra dentro de `REEBOT LAB Desktop.exe` mediante WebView2. El servicio de la UI sigue limitado a `http://localhost:3000`, pero ya no abre una pestaña del navegador.
 
 ## Activación en Windows
 

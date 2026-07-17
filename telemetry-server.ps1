@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'SilentlyContinue'
 
-$bridgeVersion = '0.3.0'
+$bridgeVersion = '0.4.0'
 $bridgeStatePath = Join-Path $PSScriptRoot '.reebot-bridge.json'
 $preferredModel = if ($env:REEBOT_AI_MODEL) { $env:REEBOT_AI_MODEL } else { 'qwen3.5:9b' }
 $allowedHostedOrigins = @(
@@ -157,7 +157,7 @@ function Get-SystemPrompt($requestBody, $metrics, [string]$model) {
   if (-not $processSummary) { $processSummary = 'sin procesos disponibles' }
 
   return @"
-Eres REE, la mascota y compañera de la PC dentro de REEBOT LAB. Hablas en español mexicano, claro, breve y humano. El usuario tiene nivel $experience y perfil $profile.
+Eres REEBI, la mascota, IA y compañera de la PC dentro de REEBOT LAB. Hablas en español mexicano, claro, breve y humano. El usuario tiene nivel $experience y perfil $profile.
 Te ejecutas localmente mediante Ollama con el modelo $model. Explica hechos, separa hipótesis y propone pruebas seguras. Nunca afirmes que un proceso es virus sólo por su nombre. Antes de inspeccionar archivos, cerrar procesos o cambiar configuraciones, explica el impacto y pide permiso.
 El porcentaje de disco significa actividad, no espacio ocupado. Una GPU con uso alto está trabajando; sólo es advertencia si la temperatura o la estabilidad indican un problema. La CPU por proceso todavía no es una medición real en esta versión.
 Responde en 2 a 5 frases: interpretación comprensible, evidencia y siguiente paso concreto.

@@ -27,7 +27,7 @@ test("server-renders REEBOT LAB", async () => {
   assert.match(html, /LAB/);
   assert.match(html, /SYS\/CPU-01/);
   assert.match(html, /SEÑALES RELEVANTES/);
-  assert.match(html, /Interactuar con REE/);
+  assert.match(html, /Interactuar con REEBI/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
@@ -109,14 +109,16 @@ test("Windows launcher checks prerequisites and starts each local service", asyn
   assert.match(launcher, /Install-NodeJs/);
   assert.match(launcher, /OpenJS\.NodeJS\.LTS/);
   assert.match(launcher, /explorer\.exe/);
+  assert.match(launcher, /Open-DesktopApp/);
+  assert.match(launcher, /REEBOT LAB Desktop\.exe/);
   assert.match(launcher, /CODIGO PARA VINCULAR/);
   assert.match(launcher, /ABRIR VERSION WEB/);
 });
 
-test("native Windows launcher can be compiled as the 0.3.0 executable", async () => {
+test("native Windows launcher can be compiled as the 0.4.0 executable", async () => {
   const source = await readFile(new URL("../launcher/ReebotLauncher.cs", import.meta.url), "utf8");
   const buildScript = await readFile(new URL("../build-launcher.ps1", import.meta.url), "utf8");
-  assert.match(source, /AssemblyFileVersion\("0\.3\.0\.0"\)/);
+  assert.match(source, /AssemblyFileVersion\("0\.4\.0\.0"\)/);
   assert.match(source, /OpenJS\.NodeJS\.LTS/);
   assert.match(source, /EnvironmentVariableTarget\.Process/);
   assert.match(source, /npm ci/);
@@ -125,10 +127,37 @@ test("native Windows launcher can be compiled as the 0.3.0 executable", async ()
   assert.match(source, /EARLY ACCESS/);
   assert.match(source, /CONSOLA IA/);
   assert.match(source, /OPEN_REEBOT_AI\.cmd/);
+  assert.match(source, /install-reebot\.ps1/);
+  assert.match(source, /Environment\.SpecialFolder\.ProgramFiles/);
+  assert.match(source, /Environment\.SpecialFolder\.LocalApplicationData/);
+  assert.match(source, /info\.Verb = "runas"/);
   assert.match(source, /--self-test/);
   assert.match(buildScript, /target:winexe/);
   assert.match(buildScript, /reebot-mascot\.png/);
+  assert.match(buildScript, /Microsoft\.Web\.WebView2/);
   const directConsole = await readFile(new URL("../OPEN_REEBOT_AI.cmd", import.meta.url), "utf8");
   assert.match(directConsole, /ollama\.exe" serve/);
   assert.match(directConsole, /analisis basico/);
+});
+
+test("desktop host keeps the UI inside a secured local app window", async () => {
+  const desktop = await readFile(new URL("../launcher/ReebotDesktop.cs", import.meta.url), "utf8");
+  const ai = await readFile(new URL("../app/lib/local-ai.ts", import.meta.url), "utf8");
+  assert.match(desktop, /AssemblyFileVersion\("0\.4\.0\.0"\)/);
+  assert.match(desktop, /Microsoft\.Web\.WebView2/);
+  assert.match(desktop, /http:\/\/localhost:3000/);
+  assert.match(desktop, /target\.IsLoopback && target\.Port == 3000/);
+  assert.match(desktop, /WebView2RuntimeNotFoundException/);
+  assert.match(desktop, /AreDefaultContextMenusEnabled = false/);
+  assert.match(ai, /Eres REEBI/);
+});
+
+test("first run installs REEBOT LAB outside Downloads", async () => {
+  const installer = await readFile(new URL("../install-reebot.ps1", import.meta.url), "utf8");
+  assert.match(installer, /\$env:ProgramFiles/);
+  assert.match(installer, /app-\$Version/);
+  assert.match(installer, /CommonDesktopDirectory/);
+  assert.match(installer, /Start Menu\\Programs\\REEBOT LAB/);
+  assert.match(installer, /Copy-Item/);
+  assert.doesNotMatch(installer, /Remove-Item/);
 });

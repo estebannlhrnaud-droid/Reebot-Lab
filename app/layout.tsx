@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [{ url: socialImage, width: 1736, height: 905, alt: "REEBOT LAB y REE, el compañero de tu PC" }],
+      images: [{ url: socialImage, width: 1736, height: 905, alt: "REEBOT LAB y REEBI, la compañera de tu PC" }],
     },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };
