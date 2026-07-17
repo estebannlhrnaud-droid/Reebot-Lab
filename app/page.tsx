@@ -74,7 +74,7 @@ export default function Home(){
             <article className="mascot-card">
               <div className="mascot-top"><span>REE / ID-001</span><button onClick={cycleMood}>CAMBIAR ÁNIMO</button></div>
               <div className="orbital orbital-one"/><div className="orbital orbital-two"/><div className="mascot-glow"/>
-              <div className="mascot"><div className="mascot-face"><div className="eyes"><i/><i/></div><span className="smile"/></div><span className="mascot-light"/></div>
+              <img className="mascot-image" src="/reebot-mascot.png" alt="REE, la mascota robótica de REEBOT LAB" />
               <div className="mascot-caption">TU PC ESTÁ PRESENTE</div>
             </article>
           </section>
