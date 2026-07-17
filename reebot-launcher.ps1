@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
-$launcherVersion = '0.4.0'
+$launcherVersion = '0.6.0'
 $projectRoot = $PSScriptRoot
 $publishedUrl = 'https://reebot-lab-preview.estebannlhrnaud.chatgpt.site'
 $localUrl = 'http://localhost:3000'

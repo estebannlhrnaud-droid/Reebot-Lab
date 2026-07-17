@@ -1,7 +1,7 @@
 param(
   [Parameter(Mandatory = $true)]
   [string]$SourceRoot,
-  [string]$Version = '0.4.0',
+  [string]$Version = '0.6.0',
   [string]$InstallBase = (Join-Path $env:ProgramFiles 'REEBOT LAB'),
   [switch]$SkipShortcuts
 )
@@ -12,6 +12,7 @@ $installRoot = Join-Path $installBase "app-$Version"
 
 $required = @(
   (Join-Path $source 'REEBOT LAB.exe'),
+  (Join-Path $source 'REEBOT LAB Updater.exe'),
   (Join-Path $source 'package.json'),
   (Join-Path $source 'telemetry-server.ps1'),
   (Join-Path $source 'desktop-runtime\REEBOT LAB Desktop.exe')

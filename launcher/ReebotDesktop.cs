@@ -12,8 +12,8 @@ using Microsoft.Web.WebView2.WinForms;
 [assembly: AssemblyCompany("REEBOT LAB")]
 [assembly: AssemblyProduct("REEBOT LAB")]
 [assembly: AssemblyCopyright("REEBOT LAB Early Access")]
-[assembly: AssemblyVersion("0.4.0.0")]
-[assembly: AssemblyFileVersion("0.4.0.0")]
+[assembly: AssemblyVersion("0.6.0.0")]
+[assembly: AssemblyFileVersion("0.6.0.0")]
 
 namespace ReebotLab.Desktop
 {

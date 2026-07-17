@@ -6,19 +6,26 @@ REEBOT LAB es un compañero inteligente y open source para Windows que permite c
 
 ## Estado
 
-El proyecto está en **Early Access**. La interfaz, la telemetría local, el agente de vinculación y el chat con Ollama ya funcionan como prototipo. Los permisos avanzados y los experimentos que ejecutan acciones reales continúan en desarrollo.
+El proyecto está en **Early Access**. La interfaz, la telemetría local, el agente de vinculación, el chat con Ollama y las primeras optimizaciones reversibles ya funcionan. Las acciones avanzadas continúan en desarrollo.
 
 ## Funciones actuales
 
-- Monitor local de CPU, GPU, temperatura, VRAM, RAM, discos y procesos.
+- Monitor local con refresco de 1 s para CPU, GPU, temperatura, VRAM, RAM, discos y procesos.
+- Relojes CPU/GPU en una barra `BASE · BOOST · XOC`, referencias oficiales y offset exacto cuando NVIDIA App o MSI Afterburner exponen el OC.
+- Gráfica GPU/VRAM combinada e identificación del proceso que más memoria de video utiliza.
 - Interfaz responsive con estados semánticos y avisos automáticos.
-- REEBI, mascota e IA interactiva conectada al estado del equipo.
+- Mapa físico interactivo: CPU, GPU, RAM y almacenamiento abren su panel técnico directamente desde el diagrama del gabinete.
+- REEBI 2D con animaciones automáticas de reposo, análisis, alerta, saludo y celebración conectadas al estado del equipo.
+- Dashboard modular con tamaños S/M/L y niveles de detalle Esencial, Equilibrio y Técnico guardados en la PC.
 - Perfiles Gaming, Studio, Chill y Movie con acentos visuales propios.
 - Chat local con Ollama, historial breve y contexto de métricas.
 - Consola directa para conversar con `qwen3.5:9b` sin pasar por la interfaz web.
 - Agente local con código de vinculación para conectar la versión publicada.
 - Modo básico de respaldo cuando el modelo no está activo.
 - Vistas de procesos, laboratorio y personalización.
+- Análisis híbrido de procesos: Windows filtra candidatos seguros y REEBI los ordena y explica.
+- Acciones directas con doble validación: bajar prioridad, pausar cinco minutos y deshacer.
+- Actualizador incremental: desde v0.5 descarga parches verificados desde GitHub Releases y conserva la versión anterior como respaldo; v0.6 incluye parches para la versión pública v0.4 y el preview v0.5.
 
 ## Arquitectura
 
@@ -26,6 +33,8 @@ El proyecto está en **Early Access**. La interfaz, la telemetría local, el age
 - **Agente local:** PowerShell, HTTP en `127.0.0.1:47831` y vinculación mediante token.
 - **Telemetría:** CIM/WMI de Windows y `nvidia-smi`.
 - **IA local:** Ollama con `qwen3.5:9b` como modelo recomendado.
+- **Motor de acciones:** lista cerrada de cambios reversibles, validación de identidad del proceso y registro local.
+- **Canal de actualización:** GitHub Releases, paquetes delta y verificación SHA-256 antes de instalar.
 - **Plataforma inicial:** Windows.
 
 ## Requisitos de desarrollo
@@ -70,6 +79,7 @@ npm run build
 - Los experimentos deben restaurar el estado anterior al terminar.
 - Las métricas y conversaciones con Ollama permanecen en la PC.
 - La aplicación explica antes de recomendar.
+- La IA nunca recibe una terminal libre: sólo puede proponer acciones incluidas en la lista segura del agente.
 
 ## IA local
 

@@ -32,6 +32,7 @@ yarn-error.log*
 /.reebot-bridge.json
 /.reebot-launcher.log
 /.reebot-desktop-preview.log
+/.reebot-actions.jsonl
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -46,6 +47,8 @@ next-env.d.ts
 /outputs/
 /work/
 /REEBOT LAB.exe
+/REEBOT LAB Updater.exe
 /launcher/reebot.ico
 /.packages/
 /desktop-runtime/
+/REEBOT-LAB-*.zip

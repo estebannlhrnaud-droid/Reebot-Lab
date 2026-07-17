@@ -14,8 +14,8 @@ using System.Windows.Forms;
 [assembly: AssemblyCompany("REEBOT LAB")]
 [assembly: AssemblyProduct("REEBOT LAB")]
 [assembly: AssemblyCopyright("REEBOT LAB Early Access")]
-[assembly: AssemblyVersion("0.4.0.0")]
-[assembly: AssemblyFileVersion("0.4.0.0")]
+[assembly: AssemblyVersion("0.6.0.0")]
+[assembly: AssemblyFileVersion("0.6.0.0")]
 
 namespace ReebotLab.Launcher
 {
@@ -116,7 +116,7 @@ namespace ReebotLab.Launcher
 
     internal static class Installation
     {
-        private const string Version = "0.4.0";
+        private const string Version = "0.6.0";
 
         public static bool IsInstalledPath(string directory)
         {
@@ -187,7 +187,7 @@ namespace ReebotLab.Launcher
 
     internal sealed class LauncherForm : Form
     {
-        private const string LauncherVersion = "0.4.0";
+        private const string LauncherVersion = "0.6.0";
         private const string PublishedUrl = "https://reebot-lab-preview.estebannlhrnaud.chatgpt.site";
         private const string LocalUrl = "http://localhost:3000";
         private const int BridgePort = 47831;
@@ -226,6 +226,11 @@ namespace ReebotLab.Launcher
             get { return Path.Combine(installRoot, "desktop-runtime", "REEBOT LAB Desktop.exe"); }
         }
 
+        private string UpdaterPath
+        {
+            get { return Path.Combine(installRoot, "REEBOT LAB Updater.exe"); }
+        }
+
         public LauncherForm()
         {
             installRoot = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
@@ -234,6 +239,10 @@ namespace ReebotLab.Launcher
             RefreshExecutablePaths();
             RefreshSystemStatus();
             statusTimer.Start();
+            if (Installation.IsInstalledPath(installRoot))
+            {
+                Shown += delegate { StartUpdater(true); };
+            }
         }
 
         private static string PrepareRuntime(string sourceRoot)
@@ -381,9 +390,19 @@ namespace ReebotLab.Launcher
             activityLabel = MakeLabel("COMPROBANDO TU PC...", 42, 570, 560, 28, 8, FontStyle.Bold, Color.FromArgb(98, 98, 108));
             Controls.Add(activityLabel);
 
+            LinkLabel updateLink = new LinkLabel();
+            updateLink.Text = "ACTUALIZAR";
+            updateLink.Location = new Point(508, 570);
+            updateLink.Size = new Size(100, 28);
+            updateLink.TextAlign = ContentAlignment.MiddleRight;
+            updateLink.Font = UiFont(8, FontStyle.Bold);
+            updateLink.LinkColor = mint;
+            updateLink.LinkClicked += delegate { StartUpdater(false); };
+            Controls.Add(updateLink);
+
             LinkLabel consoleLink = new LinkLabel();
             consoleLink.Text = "CONSOLA IA";
-            consoleLink.Location = new Point(596, 570);
+            consoleLink.Location = new Point(610, 570);
             consoleLink.Size = new Size(112, 28);
             consoleLink.TextAlign = ContentAlignment.MiddleRight;
             consoleLink.Font = UiFont(8, FontStyle.Bold);
@@ -430,6 +449,26 @@ namespace ReebotLab.Launcher
             catch (Exception exception)
             {
                 MessageBox.Show("No pude abrir la consola de IA.\r\n\r\n" + exception.Message, "REEBOT LAB", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void StartUpdater(bool silent)
+        {
+            if (!File.Exists(UpdaterPath))
+            {
+                if (!silent) MessageBox.Show("Esta instalación todavía no incluye el actualizador. Instala la versión completa más reciente una sola vez para activar parches automáticos.", "REEBOT LAB", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            try
+            {
+                ProcessStartInfo info = new ProcessStartInfo(UpdaterPath, silent ? "--check-silent" : string.Empty);
+                info.WorkingDirectory = installRoot;
+                info.UseShellExecute = true;
+                Process.Start(info);
+            }
+            catch (Exception exception)
+            {
+                if (!silent) MessageBox.Show("No pude abrir el actualizador.\r\n\r\n" + exception.Message, "REEBOT LAB", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -938,6 +977,9 @@ namespace ReebotLab.Launcher
                 bool ready = File.Exists(Path.Combine(root, "telemetry-server.ps1"))
                     && File.Exists(Path.Combine(root, "package.json"))
                     && File.Exists(Path.Combine(root, "install-reebot.ps1"))
+                    && File.Exists(Path.Combine(root, "resume-process.ps1"))
+                    && File.Exists(Path.Combine(root, "hardware-references.json"))
+                    && File.Exists(Path.Combine(root, "REEBOT LAB Updater.exe"))
                     && File.Exists(Path.Combine(root, "public", "reebot-mascot.png"))
                     && File.Exists(Path.Combine(root, "desktop-runtime", "REEBOT LAB Desktop.exe"))
                     && File.Exists(Path.Combine(root, "desktop-runtime", "Microsoft.Web.WebView2.Core.dll"))

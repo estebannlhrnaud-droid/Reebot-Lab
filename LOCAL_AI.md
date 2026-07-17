@@ -49,7 +49,11 @@ Después de vincularse, la telemetría y las preguntas viajan directamente entre
 - Bloquea el código durante un minuto después de cinco intentos fallidos.
 - Permite revocar el token desde Ajustes.
 - No escucha en la red local ni abre puertos externos.
-- No lee archivos, cierra procesos ni cambia configuraciones.
+- Las métricas y el chat pueden usarse desde la versión vinculada, pero las acciones directas sólo aceptan solicitudes de la app local en el puerto 3000.
+- La IA no ejecuta comandos ni recibe acceso a PowerShell. Sólo ordena candidatos que el agente ya marcó como modificables.
+- Antes de cambiar un proceso, el agente vuelve a comprobar PID, nombre, hora de inicio, sesión y lista de protección.
+- Cada cambio requiere confirmación en pantalla y genera un registro local en `.reebot-actions.jsonl`.
+- La prioridad puede restaurarse y las pausas se reanudan automáticamente después de cinco minutos.
 
 ## Configuración opcional
 
@@ -62,6 +66,9 @@ $env:REEBOT_AI_MODEL = "qwen3.5:9b"
 ## Límites actuales
 
 - La IA recibe la pregunta, el perfil seleccionado y una instantánea de métricas.
-- La CPU individual por proceso todavía no se mide de forma fiable.
-- Los experimentos guiados todavía explican el procedimiento, pero no ejecutan acciones.
+- La CPU individual se estima entre dos muestras; la primera lectura aparece en cero.
+- Las métricas globales y las gráficas CPU/GPU/VRAM se refrescan cada segundo.
+- REEBI recibe reloj base, boost, zona XOC, offsets detectados y el proceso con mayor VRAM para explicar el estado con evidencia.
+- Sólo se permiten dos acciones: prioridad baja reversible y pausa temporal de cinco minutos.
+- REEBOT bloquea procesos de Windows, controladores, otras sesiones, Ollama y sus propios componentes.
 - La primera vinculación requiere copiar manualmente el código del agente.

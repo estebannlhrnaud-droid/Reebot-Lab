@@ -6,6 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $sourcePath = Join-Path $PSScriptRoot 'launcher\ReebotLauncher.cs'
 $desktopSourcePath = Join-Path $PSScriptRoot 'launcher\ReebotDesktop.cs'
+$updaterSourcePath = Join-Path $PSScriptRoot 'launcher\ReebotUpdater.cs'
 $mascotPath = Join-Path $PSScriptRoot 'public\reebot-mascot.png'
 $iconPath = Join-Path $PSScriptRoot 'launcher\reebot.ico'
 $packageCache = Join-Path $PSScriptRoot '.packages'
@@ -16,6 +17,7 @@ $webViewWinForms = Join-Path $webViewPackageRoot 'lib\net462\Microsoft.Web.WebVi
 $webViewLoader = Join-Path $webViewPackageRoot 'runtimes\win-x64\native\WebView2Loader.dll'
 $desktopOutputDirectory = Join-Path $PSScriptRoot 'desktop-runtime'
 $desktopOutputPath = Join-Path $desktopOutputDirectory 'REEBOT LAB Desktop.exe'
+$updaterOutputPath = Join-Path $PSScriptRoot 'REEBOT LAB Updater.exe'
 $compilerCandidates = @(
   (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'),
   (Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe')
@@ -24,6 +26,7 @@ $compiler = $compilerCandidates | Where-Object { Test-Path -LiteralPath $_ } | S
 if (-not $compiler) { throw 'No se encontro el compilador de .NET Framework para crear el launcher.' }
 if (-not (Test-Path -LiteralPath $sourcePath)) { throw "No se encontro $sourcePath" }
 if (-not (Test-Path -LiteralPath $desktopSourcePath)) { throw "No se encontro $desktopSourcePath" }
+if (-not (Test-Path -LiteralPath $updaterSourcePath)) { throw "No se encontro $updaterSourcePath" }
 if (-not (Test-Path -LiteralPath $mascotPath)) { throw "No se encontro $mascotPath" }
 
 if (-not (Test-Path -LiteralPath $webViewCore) -or -not (Test-Path -LiteralPath $webViewWinForms) -or -not (Test-Path -LiteralPath $webViewLoader)) {
@@ -86,6 +89,9 @@ Copy-Item -LiteralPath $webViewLoader -Destination (Join-Path $desktopOutputDire
 & $compiler /nologo /target:winexe /optimize+ /platform:x64 /win32icon:$iconPath /out:$desktopOutputPath /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:$webViewCore /reference:$webViewWinForms $desktopSourcePath
 if ($LASTEXITCODE -ne 0) { throw "El compilador del host de escritorio termino con codigo $LASTEXITCODE" }
 
+& $compiler /nologo /target:winexe /optimize+ /platform:anycpu /win32icon:$iconPath /out:$updaterOutputPath /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Web.Extensions.dll /reference:System.IO.Compression.dll /reference:System.IO.Compression.FileSystem.dll $updaterSourcePath
+if ($LASTEXITCODE -ne 0) { throw "El compilador del actualizador termino con codigo $LASTEXITCODE" }
+
 & $compiler /nologo /target:winexe /optimize+ /platform:anycpu /win32icon:$iconPath /out:$OutputPath /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll $sourcePath
 if ($LASTEXITCODE -ne 0) { throw "El compilador termino con codigo $LASTEXITCODE" }
 
@@ -99,3 +105,8 @@ $desktopHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $desktopOutputPath).
 Write-Host "App de escritorio: $($desktopBinary.FullName)"
 Write-Host "Tamano: $([math]::Round($desktopBinary.Length / 1KB, 1)) KB"
 Write-Host "SHA256: $desktopHash"
+$updaterBinary = Get-Item -LiteralPath $updaterOutputPath
+$updaterHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $updaterOutputPath).Hash
+Write-Host "Actualizador: $($updaterBinary.FullName)"
+Write-Host "Tamano: $([math]::Round($updaterBinary.Length / 1KB, 1)) KB"
+Write-Host "SHA256: $updaterHash"

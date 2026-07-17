@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-17",
+  "cpus": [
+    {
+      "match": "AMD Ryzen 7 5700G",
+      "baseMHz": 3800,
+      "boostMHz": 4600,
+      "sourceLabel": "AMD — Ryzen 5000 Quick Reference",
+      "sourceUrl": "https://www.amd.com/content/dam/amd/en/documents/partner-hub/ryzen/amd-consumer-pocket-guide-ryzen-radeon-july-2024.pdf"
+    }
+  ],
+  "gpus": [
+    {
+      "match": "NVIDIA GeForce RTX 5050",
+      "coreBaseMHz": 2310,
+      "coreBoostMHz": 2570,
+      "memoryStockMHz": 10000,
+      "sourceLabel": "NVIDIA — GeForce RTX 5050",
+      "sourceUrl": "https://www.nvidia.com/es-la/geforce/graphics-cards/50-series/rtx-5050/"
+    }
+  ]
+}
