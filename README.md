@@ -36,6 +36,8 @@ El proyecto está en **Early Access**. La interfaz, la telemetría local, el age
 
 ## Inicio rápido local
 
+La forma recomendada es abrir `REEBOT_LAB_LAUNCHER.cmd`. El launcher comprueba Node.js, el agente local y Ollama; muestra el código de vinculación y permite abrir la interfaz local o la versión web. La primera instalación de dependencias siempre pide confirmación.
+
 ```powershell
 npm install
 .\start-reebot-lab.cmd

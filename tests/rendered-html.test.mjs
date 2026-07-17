@@ -67,3 +67,14 @@ test("profiles expose Studio and distinct UI themes", async () => {
     assert.match(styles, new RegExp(`data-profile=["']${profile}["']`));
   }
 });
+
+test("Windows launcher checks prerequisites and starts each local service", async () => {
+  const launcher = await readFile(new URL("../reebot-launcher.ps1", import.meta.url), "utf8");
+  const entrypoint = await readFile(new URL("../REEBOT_LAB_LAUNCHER.cmd", import.meta.url), "utf8");
+  assert.match(entrypoint, /reebot-launcher\.ps1/i);
+  assert.match(launcher, /Confirm-Dependencies/);
+  assert.match(launcher, /Start-BridgeIfNeeded/);
+  assert.match(launcher, /Start-OllamaIfAvailable/);
+  assert.match(launcher, /CODIGO PARA VINCULAR/);
+  assert.match(launcher, /ABRIR VERSION WEB/);
+});
